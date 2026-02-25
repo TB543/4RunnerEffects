@@ -1,19 +1,15 @@
-from sounddevice import Stream, sleep
-from pedalboard import Pedalboard, Reverb, Distortion, Chorus
-from AppData import *
+from Audio.AudioIO import AudioIO
 
-board = Pedalboard([
-    Distortion(),
-    Reverb(room_size=0.3),
-    Chorus()
-])
+audio = AudioIO()
+audio.set_input_device("45 Input (iRig USB)")
+audio.set_output_device("34 Headphones (HD Audio Headphone)")
+input("Press Enter to continue...")
+audio.destroy()
+input("Press Enter to continue...")
+audio.set_output_device("34 Headphones (HD Audio Headphone)")
+input("Press Enter to continue...")
 
-def callback(indata, outdata, frames, time, status):
-    outdata[:] = board(indata, SAMPLE_RATE)
-
-with Stream(device=(AUDIO_IN, AUDIO_OUT),
-            samplerate=SAMPLE_RATE,
-            blocksize=BLOCK_SIZE,
-            channels=CHANNELS,
-            callback=callback):
-    sleep(60000)
+with audio.modify_effects() as e:
+    print(type(e))
+    input()
+input("Press Enter to continue...")
