@@ -1,5 +1,5 @@
 from customtkinter import CTkCanvas
-from tkinter import EventType
+from tkinter import EventType, Event
 from uuid import uuid4
 
 
@@ -26,6 +26,9 @@ class PedalBoard(CTkCanvas):
         self._scroll_event = 0
         self._scrollbar_tag = "scrollbar"
         self._content_tag = "content"
+        self.tag_bind(self._scrollbar_tag, "<Button-1>", self._scroll)
+        self.tag_bind(self._scrollbar_tag, "<B1-Motion>", self._scroll)
+        self.add_button_binding(self._scrollbar_tag)
 
         # creates title
         self._title_tag = "title"
@@ -36,6 +39,7 @@ class PedalBoard(CTkCanvas):
         self._settings_tag = "settings"
         self.create_rounded_rectangle(-25, -25, 25, 25, 5, fill="#1F6AA5", width=3, tags=self._settings_tag)
         self.create_text(1, -1, text="⚙", font=("Comic Sans MS", 25, "bold"), tags=self._settings_tag)
+        self.add_button_binding(self._settings_tag)
 
     def create_rounded_rectangle(self, x1, y1, x2, y2, radius, **kwargs):
         """
@@ -91,6 +95,42 @@ class PedalBoard(CTkCanvas):
             self.create_line(x2, y1 + radius, x2, y2 - radius, **kwargs)
         return uuid
 
+    def add_button_binding(self, tag_or_id, callback=None):
+        """
+        adds button bindings to a canvas object
+            adds button animation bindings
+            adds button callback if given
+
+        :param tag_or_id: tag or id of the canvas object
+        :param callback: callback function
+            must have a parameter for the click event
+        """
+
+        self.tag_bind(tag_or_id, "<Button-1>", lambda e: self.move(tag_or_id, 2, 2), add="+")
+        self.tag_bind(tag_or_id, "<ButtonRelease-1>", lambda e: self.move(tag_or_id, -2, -2), add="+")
+        if callback:
+            self.tag_bind(tag_or_id, "<ButtonRelease-1>", callback, add="+")
+
+    def _set_scroll(self, relx):
+        """
+        sets the scroll position
+
+        :param relx: scroll amount where 0 is all the way left and 1 is all the way right
+        """
+
+        # calculates positioning parameters
+        bbox = self.bbox(self._scrollbar_tag)
+        self._scroll_event = bbox[0]
+        scrollbar_width = bbox[2] - bbox[0]
+        min_x = self._scrollbar_padding / 2
+        max_x = self._width - (self._scrollbar_padding / 2) - scrollbar_width
+
+        # creates simulated scroll event and triggers it
+        event = Event()
+        event.type = EventType.Motion
+        event.x = min_x + (max_x - min_x) * relx
+        self._scroll(event)
+
     def _scroll(self, event):
         """
         processes scroll events on the scrollbar
@@ -116,8 +156,8 @@ class PedalBoard(CTkCanvas):
             elif bbox[2] + scrollbar_dx > max_x + scrollbar_width:
                 scrollbar_dx = max_x + scrollbar_width - bbox[2]
 
-            # calculate scroll amount
-            scroll_percent = (bbox[0] - min_x) / (max_x - min_x)
+            # calculate content scroll amount
+            scroll_percent = (bbox[0] + scrollbar_dx - min_x) / (max_x - min_x)
             content_x = scroll_percent * (self._content_width - self._width)
             content_dx = self._scroll_x - content_x
 
@@ -132,18 +172,22 @@ class PedalBoard(CTkCanvas):
         draws a horizontal scrollbar on the canvas
         """
 
-        # calculate scrollbar bbox
+        # redraw scrollbar
         self.delete(self._scrollbar_tag)
         if self._content_width > self._width:
             scroll_percent = self._scroll_x / (self._content_width - self._width)
             scrollbar_width = ((self._width / self._content_width) * self._width) - self._scrollbar_padding
+            scrollbar_width = max(scrollbar_width, 75)
             scrollbar_x = scroll_percent * (self._width - scrollbar_width - self._scrollbar_padding) + (self._scrollbar_padding / 2)
-
-            # create scrollbar and bind function
             pos = scrollbar_x, self._height - 45, scrollbar_x + scrollbar_width, self._height - 25
             self.create_rounded_rectangle(*pos, 7, fill="gray", tags=self._scrollbar_tag)
-            self.tag_bind(self._scrollbar_tag, "<Button-1>", self._scroll)
-            self.tag_bind(self._scrollbar_tag, "<B1-Motion>", self._scroll)
+
+            # ensure content is in correct position
+            self._scroll_event = 0
+            event = Event()
+            event.type = EventType.Motion
+            event.x = 0
+            self._scroll(event)
 
     def _resize(self, event):
         """
