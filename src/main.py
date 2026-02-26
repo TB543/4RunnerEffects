@@ -1,15 +1,8 @@
-from Audio.AudioIO import AudioIO
+from customtkinter import CTk
+from UI.PedalBoard import PedalBoard
 
-audio = AudioIO()
-audio.set_input_device("45 Input (iRig USB)")
-audio.set_output_device("34 Headphones (HD Audio Headphone)")
-input("Press Enter to continue...")
-audio.destroy()
-input("Press Enter to continue...")
-audio.set_output_device("34 Headphones (HD Audio Headphone)")
-input("Press Enter to continue...")
 
-with audio.modify_effects() as e:
-    print(type(e))
-    input()
-input("Press Enter to continue...")
+root = CTk()
+root.geometry("1024x600")
+PedalBoard(root).pack(fill="both", expand=True)
+root.mainloop()

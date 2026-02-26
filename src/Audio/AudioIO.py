@@ -1,5 +1,5 @@
 from sounddevice import query_devices, default, Stream, PortAudioError
-from Audio.Effects import Effects
+from pedalboard import Pedalboard
 
 
 class AudioIO:
@@ -16,16 +16,15 @@ class AudioIO:
 
         self.input_devices = []
         self.output_devices = []
-        self._input_index = default.device[0]
-        self._output_index = default.device[1]
+        self._input_device = query_devices(default.device[0])
+        self._output_device = query_devices(default.device[1])
         self._stream: Stream | None = None
-        self._effects = Effects()
-        self.refresh_devices()
+        self._effects = Pedalboard()
         self._start_stream()
 
     def __enter__(self):
         """
-        accesses the audio stream within a context manager
+        accesses the effects within a context manager where audio stream is paused
         """
 
         self._stream.stop()
@@ -33,10 +32,52 @@ class AudioIO:
 
     def __exit__(self, *args):
         """
-        exists the context manager
+        exits the context manager and resumes the audio stream
         """
 
         self._stream.start()
+
+    @property
+    def input_device(self):
+        """
+        returns the currently selected input device
+        """
+
+        return f"{self._input_device['index']} {self._input_device['name']}"
+
+    @property
+    def output_device(self):
+        """
+        returns the currently selected output device
+        """
+
+        return f"{self._output_device['index']} {self._output_device['name']}"
+
+    @input_device.setter
+    def input_device(self, name):
+        """
+        selects an input device to use within the audio stream
+
+        :param name: the name of the input device found in self.input_devices
+            in the format {device['index']} {device['name']}
+        """
+
+        self.destroy()
+        self._input_device = query_devices(int(name.split(" ")[0]))
+        self._start_stream()
+
+    @output_device.setter
+    def output_device(self, name):
+        """
+        selects an output device to use within the audio stream
+
+        :param name: the name of the output device found in self.output_devices
+            in the format {device['index']} {device['name']}
+        """
+
+        self.destroy()
+        self._output_device = query_devices(int(name.split(" ")[0]))
+        self._start_stream()
 
     def modify_effects(self):
         """
@@ -45,22 +86,21 @@ class AudioIO:
 
         with self.modify_effects() as effects:
             ...
+
+        note: accessing effects outside the context manager will produce unexpected behavior
         """
 
         return self
 
     def refresh_devices(self):
         """
-        gets a list of all available audio devices
-
-        :return: a list of all available audio devices
+        updates the lists of input and output devices
         """
 
         # resets devices
         self.input_devices = []
         self.output_devices = []
         for device in query_devices():
-            print(device)
             name = f"{device['index']} {device['name']}"
 
             # adds input devices
@@ -70,36 +110,6 @@ class AudioIO:
             # adds output devices
             if device["max_output_channels"] > 0:
                 self.output_devices.append(name)
-
-    def set_input_device(self, name):
-        """
-        selects an input device to use within the audio stream
-
-        :param name: the name of the input device found in self.input_devices
-            in the format {device['index']} {device['name']}
-
-        :return: true or false to determine if the stream successfully started with
-            the new input device
-        """
-
-        self.destroy()
-        self._input_index = int(name.split(" ")[0])
-        return self._start_stream()
-
-    def set_output_device(self, name):
-        """
-        selects an output device to use within the audio stream
-
-        :param name: the name of the output device found in self.output_devices
-            in the format {device['index']} {device['name']}
-
-        :return: true or false to determine if the stream successfully started with
-            the new output device
-        """
-
-        self.destroy()
-        self._output_index = int(name.split(" ")[0])
-        return self._start_stream()
 
     def destroy(self):
         """
@@ -118,7 +128,7 @@ class AudioIO:
         see Stream docs for more details
         """
 
-        outdata[:] = indata
+        outdata[:] = self._effects(indata, self._input_device["default_samplerate"])
 
     def _start_stream(self):
         """
@@ -130,9 +140,9 @@ class AudioIO:
         # attempts to start the new audio stream
         try:
             self._stream = Stream(
-                device=(self._input_index, self._output_index),
-                callback=lambda indata, outdata, frames, time, status: self._stream_callback(indata, outdata),
-                samplerate=44100,
+                device=(self._input_device["index"], self._output_device["index"]),
+                callback=lambda indata, outdata, *args: self._stream_callback(indata, outdata),
+                samplerate=self._input_device["default_samplerate"],
                 blocksize=128,
                 channels=1
             )
