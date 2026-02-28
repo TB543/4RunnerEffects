@@ -1,11 +1,17 @@
 from customtkinter import CTkCanvas
 from tkinter import EventType, Event
 from uuid import uuid4
+from UI.BasePedal import BasePedal
 
 
 class PedalBoard(CTkCanvas):
     """
     a class to represent a graphical Pedal Board
+
+    todo include default pedal to content width
+        redraw pedals on resize
+        add pedal padding
+        draw pedals based on x1 y1 and height, pedals determine their own width
     """
 
     def __init__(self, parent):
@@ -37,18 +43,77 @@ class PedalBoard(CTkCanvas):
 
         # creates settings button
         self._settings_tag = "settings"
-        self.create_rounded_rectangle(-25, -25, 25, 25, 5, fill="#1F6AA5", width=3, tags=self._settings_tag)
+        self.create_rounded_rectangle((-25, -25, 25, 25), 5, fill="#1F6AA5", width=3, tags=self._settings_tag)
         self.create_text(1, -1, text="⚙", font=("Comic Sans MS", 25, "bold"), tags=self._settings_tag)
         self.add_button_binding(self._settings_tag)
 
-    def create_rounded_rectangle(self, x1, y1, x2, y2, radius, **kwargs):
+        # creates the add pedals menu
+        self.pedals = []
+        self._add_pedals_menu = BasePedal(self, self._content_tag)
+
+    def add_pedal(self, name):
+        """
+        adds a pedal to the board
+
+        :param name: name of the effects pedal to add
+        """
+
+        # calculate position
+        x = self._content_width - self._scroll_x
+        y1 = self._height * .15 # rely
+        y2 = self._height * .9 # rely
+        width = (y2 - y1) * (2 / 3)  # aspect ratio for pedals
+
+        # create pedal
+        pedal = BasePedal(self, self._content_tag)
+        self.pedals.append(pedal)
+        pedal.draw((x, y1, x + width, y2), fill="gray", width=7)
+        self.move(self._add_pedals_menu.id, width, 0)
+        self._content_width += width
+        self._draw_scrollbar()
+
+    def delete_pedal(self, pedal_id):
+        """
+        removes a pedal from the board
+
+        :param pedal_id: id of the pedal to delete
+        """
+
+    def add_button_binding(self, tag_or_id, callback=None):
+        """
+        adds button bindings to a canvas object
+            adds button animation bindings
+            adds button callback if given
+
+        :param tag_or_id: tag or id of the canvas object
+        :param callback: callback function
+            must have a parameter for the click event
+        """
+
+        self.tag_bind(tag_or_id, "<Button-1>", lambda e: self.move(tag_or_id, 2, 2), add="+")
+        self.tag_bind(tag_or_id, "<ButtonRelease-1>", lambda e: self.move(tag_or_id, -2, -2), add="+")
+        if callback:
+            self.tag_bind(tag_or_id, "<ButtonRelease-1>", callback, add="+")
+
+    def remove_button_binding(self, tag_or_id):
+        """
+        removes button bindings from a canvas object
+
+        :param tag_or_id: tag or id of the canvas object
+        """
+
+        self.tag_unbind(tag_or_id, "<Button-1>")
+        self.tag_unbind(tag_or_id, "<ButtonRelease-1>")
+
+    def create_rounded_rectangle(self, bbox, radius, **kwargs):
         """
         creates a rounded rectangle on the canvas
 
-        :param x1: x coordinate of the top left of the rectangle
-        :param y1: y coordinate of the top left of the rectangle
-        :param x2: x coordinate of the bottom right of the rectangle
-        :param y2: y coordinate of the bottom right of the rectangle
+        :param bbox: bounding box in the format (x1, y1, x2, y2):
+            x1: x coordinate of the top left of the rectangle
+            y1: y coordinate of the top left of the rectangle
+            x2: x coordinate of the bottom right of the rectangle
+            y2: y coordinate of the bottom right of the rectangle
         :param radius: radius of the corners of the rectangle
         :param kwargs: additional keyword arguments
 
@@ -56,12 +121,13 @@ class PedalBoard(CTkCanvas):
         """
 
         # configures kwargs
+        x1, y1, x2, y2 = bbox
         outline = kwargs.pop("outline", None)
         width = kwargs.pop("width", 2)
         kwargs["outline"] = kwargs.get("fill")
 
         # sets id of rectangle
-        uuid = uuid4()
+        uuid = str(uuid4())
         if isinstance(kwargs.get("tags"), tuple):
             kwargs["tags"] = kwargs["tags"] + (uuid,)
         elif isinstance(kwargs.get("tags"), str):
@@ -94,22 +160,6 @@ class PedalBoard(CTkCanvas):
             self.create_line(x1, y1 + radius, x1, y2 - radius, **kwargs)
             self.create_line(x2, y1 + radius, x2, y2 - radius, **kwargs)
         return uuid
-
-    def add_button_binding(self, tag_or_id, callback=None):
-        """
-        adds button bindings to a canvas object
-            adds button animation bindings
-            adds button callback if given
-
-        :param tag_or_id: tag or id of the canvas object
-        :param callback: callback function
-            must have a parameter for the click event
-        """
-
-        self.tag_bind(tag_or_id, "<Button-1>", lambda e: self.move(tag_or_id, 2, 2), add="+")
-        self.tag_bind(tag_or_id, "<ButtonRelease-1>", lambda e: self.move(tag_or_id, -2, -2), add="+")
-        if callback:
-            self.tag_bind(tag_or_id, "<ButtonRelease-1>", callback, add="+")
 
     def _set_scroll(self, relx):
         """
@@ -180,7 +230,7 @@ class PedalBoard(CTkCanvas):
             scrollbar_width = max(scrollbar_width, 75)
             scrollbar_x = scroll_percent * (self._width - scrollbar_width - self._scrollbar_padding) + (self._scrollbar_padding / 2)
             pos = scrollbar_x, self._height - 45, scrollbar_x + scrollbar_width, self._height - 25
-            self.create_rounded_rectangle(*pos, 7, fill="gray", tags=self._scrollbar_tag)
+            self.create_rounded_rectangle(pos, 7, fill="gray", tags=self._scrollbar_tag)
 
             # ensure content is in correct position
             self._scroll_event = 0
@@ -206,3 +256,10 @@ class PedalBoard(CTkCanvas):
         self.move(self._title_tag, dx * .5, dy * .07)
         self.move(self._settings_tag, dx * .95, dy * .08)
         self._draw_scrollbar()
+
+        # redraws pedals
+        y1 = self._height * .15 # rely
+        y2 = self._height * .9 # rely
+        width = (y2 - y1) * (2 / 3)  # aspect ratio for pedals
+        x = -self._scroll_x
+        self._add_pedals_menu.draw((x, y1, x + width, y2), fill="gray", width=7)
