@@ -1,7 +1,7 @@
 from customtkinter import CTkCanvas
 from tkinter import EventType, Event
 from uuid import uuid4
-from UI.BasePedal import BasePedal
+from UI.Pedals import *
 
 
 class PedalBoard(CTkCanvas):
@@ -61,15 +61,21 @@ class PedalBoard(CTkCanvas):
         """
 
         # create pedal
+        pedal = None
+        match name:
+            case "Chorus":
+                pedal = ChorusPedal(self, self._content_tag)
+
+        # draw
         x = self._content_width - self.CONTENT_PADDING - self._scroll_x - self._add_pedals_width
-        pedal = BasePedal(self, self._content_tag, PedalBoard.BASE_PEDAL_ASPECT)
         self._pedals.append(pedal)
-        width = pedal.draw(x, *self._pedals_height, **PedalBoard.BASE_PEDAL_KWARGS)  # todo remove base pedal kwargs when using real pedals
+        width = pedal.draw(x, *self._pedals_height)
 
         # adjust remaining content
         self.move(self._add_pedals_menu.id, width, 0)
         self._content_width += width
         self._draw_scrollbar()
+        self._set_scroll(1)
 
     def delete_pedal(self, pedal_id):
         """
@@ -170,8 +176,12 @@ class PedalBoard(CTkCanvas):
         :param relx: scroll amount where 0 is all the way left and 1 is all the way right
         """
 
-        # calculates positioning parameters
+        # does nothing if scrollbar doesnt exist
         bbox = self.bbox(self._scrollbar_tag)
+        if bbox is None:
+            return
+
+        # calculates positioning parameters
         self._scroll_event = bbox[0]
         scrollbar_width = bbox[2] - bbox[0]
         min_x = PedalBoard.SCROLLBAR_PADDING / 2
@@ -260,7 +270,7 @@ class PedalBoard(CTkCanvas):
         self._pedals_height = (self._height * PedalBoard.CONTENT_HEIGHT_RELATIVE[0], self._height * PedalBoard.CONTENT_HEIGHT_RELATIVE[1])
         x = PedalBoard.CONTENT_PADDING
         for pedal in self._pedals:
-            x += pedal.draw(x, *self._pedals_height, **PedalBoard.BASE_PEDAL_KWARGS)  # todo remove base kwargs when using real pedals
+            x += pedal.draw(x, *self._pedals_height)
 
         # adjust drawn object positions
         self._add_pedals_width = self._add_pedals_menu.draw(x, *self._pedals_height, **PedalBoard.BASE_PEDAL_KWARGS)

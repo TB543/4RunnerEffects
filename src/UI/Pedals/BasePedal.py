@@ -1,5 +1,4 @@
 from uuid import uuid4
-from customtkinter import CTkCanvas
 
 
 class BasePedal:
@@ -7,7 +6,7 @@ class BasePedal:
     a base class to represent an effects pedal UI
     """
 
-    def __init__(self, canvas : CTkCanvas, tags, aspect):
+    def __init__(self, canvas, tags, aspect):
         """
         initializes the pedal and its fields
 
@@ -57,13 +56,14 @@ class BasePedal:
         else:
             return y
 
-    def draw(self, x, y1, y2, **kwargs):
+    def draw(self, x, y1, y2, r=20, **kwargs):
         """
         draws the pedal to the canvas with the given bbox
 
         :param x: x coordinate of the top left of the rectangle
         :param y1: y coordinate of the top left of the rectangle
         :param y2: y coordinate of the bottom of the rectangle
+        :param r: radius of the pedal rounded rectangle
         :param kwargs: the keyword arguments to draw the background
 
         :return: the width of the pedal
@@ -73,7 +73,7 @@ class BasePedal:
         width = (y2 - y1) * self._aspect
         self._bbox = (x, y1, x + width, y2)
         self.canvas.delete(self.id)
-        self.canvas.create_rounded_rectangle(self._bbox, 20, tags=self._tags, padx=kwargs.get("width", 0) / 2, **kwargs)
+        self.canvas.create_rounded_rectangle(self._bbox, r, tags=self._tags, padx=kwargs.get("width", 0) / 2, **kwargs)
 
         # functionality only for this class - draw selection buttons
         if type(self) == BasePedal:
