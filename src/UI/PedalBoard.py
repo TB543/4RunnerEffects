@@ -7,12 +7,13 @@ from UI.BasePedal import BasePedal
 class PedalBoard(CTkCanvas):
     """
     a class to represent a graphical Pedal Board
-
-    todo include default pedal to content width
-        redraw pedals on resize
-        add pedal padding
-        draw pedals based on x1 y1 and height, pedals determine their own width
     """
+
+    CONTENT_HEIGHT_RELATIVE = (.15, .9) # height ranges from 15% of screen to 90%
+    CONTENT_PADDING = 10
+    SCROLLBAR_PADDING = 50
+    BASE_PEDAL_ASPECT = 2 / 3
+    BASE_PEDAL_KWARGS = {"fill": "gray", "width": 4}
 
     def __init__(self, parent):
         """
@@ -28,7 +29,6 @@ class PedalBoard(CTkCanvas):
         # scrollbar settings
         self._scroll_x = 0
         self._content_width = 0
-        self._scrollbar_padding = 50
         self._scroll_event = 0
         self._scrollbar_tag = "scrollbar"
         self._content_tag = "content"
@@ -48,8 +48,10 @@ class PedalBoard(CTkCanvas):
         self.add_button_binding(self._settings_tag)
 
         # creates the add pedals menu
-        self.pedals = []
-        self._add_pedals_menu = BasePedal(self, self._content_tag)
+        self._pedals = []
+        self._pedals_height = (0, 0)
+        self._add_pedals_menu = BasePedal(self, self._content_tag, PedalBoard.BASE_PEDAL_ASPECT)
+        self._add_pedals_width = 0
 
     def add_pedal(self, name):
         """
@@ -58,16 +60,13 @@ class PedalBoard(CTkCanvas):
         :param name: name of the effects pedal to add
         """
 
-        # calculate position
-        x = self._content_width - self._scroll_x
-        y1 = self._height * .15 # rely
-        y2 = self._height * .9 # rely
-        width = (y2 - y1) * (2 / 3)  # aspect ratio for pedals
-
         # create pedal
-        pedal = BasePedal(self, self._content_tag)
-        self.pedals.append(pedal)
-        pedal.draw((x, y1, x + width, y2), fill="gray", width=7)
+        x = self._content_width - self.CONTENT_PADDING - self._scroll_x - self._add_pedals_width
+        pedal = BasePedal(self, self._content_tag, PedalBoard.BASE_PEDAL_ASPECT)
+        self._pedals.append(pedal)
+        width = pedal.draw(x, *self._pedals_height, **PedalBoard.BASE_PEDAL_KWARGS)  # todo remove base pedal kwargs when using real pedals
+
+        # adjust remaining content
         self.move(self._add_pedals_menu.id, width, 0)
         self._content_width += width
         self._draw_scrollbar()
@@ -125,6 +124,9 @@ class PedalBoard(CTkCanvas):
         outline = kwargs.pop("outline", None)
         width = kwargs.pop("width", 2)
         kwargs["outline"] = kwargs.get("fill")
+        if padx := kwargs.pop("padx", None):
+            x1 += padx
+            x2 -= padx
 
         # sets id of rectangle
         uuid = str(uuid4())
@@ -172,8 +174,8 @@ class PedalBoard(CTkCanvas):
         bbox = self.bbox(self._scrollbar_tag)
         self._scroll_event = bbox[0]
         scrollbar_width = bbox[2] - bbox[0]
-        min_x = self._scrollbar_padding / 2
-        max_x = self._width - (self._scrollbar_padding / 2) - scrollbar_width
+        min_x = PedalBoard.SCROLLBAR_PADDING / 2
+        max_x = self._width - (PedalBoard.SCROLLBAR_PADDING / 2) - scrollbar_width
 
         # creates simulated scroll event and triggers it
         event = Event()
@@ -197,8 +199,8 @@ class PedalBoard(CTkCanvas):
             scrollbar_dx = event.x - self._scroll_event
             bbox = self.bbox(self._scrollbar_tag)
             scrollbar_width = bbox[2] - bbox[0]
-            min_x = self._scrollbar_padding / 2
-            max_x = self._width - (self._scrollbar_padding / 2) - scrollbar_width
+            min_x = PedalBoard.SCROLLBAR_PADDING / 2
+            max_x = self._width - (PedalBoard.SCROLLBAR_PADDING / 2) - scrollbar_width
 
             # clamp so scrollbar cant go too far left/right
             if bbox[0] + scrollbar_dx < min_x:
@@ -226,9 +228,9 @@ class PedalBoard(CTkCanvas):
         self.delete(self._scrollbar_tag)
         if self._content_width > self._width:
             scroll_percent = self._scroll_x / (self._content_width - self._width)
-            scrollbar_width = ((self._width / self._content_width) * self._width) - self._scrollbar_padding
+            scrollbar_width = ((self._width / self._content_width) * self._width) - PedalBoard.SCROLLBAR_PADDING
             scrollbar_width = max(scrollbar_width, 75)
-            scrollbar_x = scroll_percent * (self._width - scrollbar_width - self._scrollbar_padding) + (self._scrollbar_padding / 2)
+            scrollbar_x = scroll_percent * (self._width - scrollbar_width - PedalBoard.SCROLLBAR_PADDING) + (PedalBoard.SCROLLBAR_PADDING / 2)
             pos = scrollbar_x, self._height - 45, scrollbar_x + scrollbar_width, self._height - 25
             self.create_rounded_rectangle(pos, 7, fill="gray", tags=self._scrollbar_tag)
 
@@ -251,15 +253,18 @@ class PedalBoard(CTkCanvas):
         dy = event.height - self._height
         self._width = event.width
         self._height = event.height
+        self._scroll_x = 0
+        self._content_width = 0
+
+        # redraws pedals
+        self._pedals_height = (self._height * PedalBoard.CONTENT_HEIGHT_RELATIVE[0], self._height * PedalBoard.CONTENT_HEIGHT_RELATIVE[1])
+        x = PedalBoard.CONTENT_PADDING
+        for pedal in self._pedals:
+            x += pedal.draw(x, *self._pedals_height, **PedalBoard.BASE_PEDAL_KWARGS)  # todo remove base kwargs when using real pedals
 
         # adjust drawn object positions
+        self._add_pedals_width = self._add_pedals_menu.draw(x, *self._pedals_height, **PedalBoard.BASE_PEDAL_KWARGS)
+        self._content_width = x + self._add_pedals_width + PedalBoard.CONTENT_PADDING
         self.move(self._title_tag, dx * .5, dy * .07)
         self.move(self._settings_tag, dx * .95, dy * .08)
         self._draw_scrollbar()
-
-        # redraws pedals
-        y1 = self._height * .15 # rely
-        y2 = self._height * .9 # rely
-        width = (y2 - y1) * (2 / 3)  # aspect ratio for pedals
-        x = -self._scroll_x
-        self._add_pedals_menu.draw((x, y1, x + width, y2), fill="gray", width=7)

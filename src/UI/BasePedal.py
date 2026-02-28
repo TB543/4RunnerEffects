@@ -7,18 +7,22 @@ class BasePedal:
     a base class to represent an effects pedal UI
     """
 
-    def __init__(self, canvas : CTkCanvas, tags):
+    def __init__(self, canvas : CTkCanvas, tags, aspect):
         """
         initializes the pedal and its fields
 
         :param canvas: the pedalboard canvas to draw onto
         :param tags: tags to use when drawing the canvas objects so parent class can control behavior
+        :param aspect: the aspect ratio of the pedal
         """
 
+        # set fields
         self.canvas = canvas
         self.id = str(uuid4())
+        self._aspect = aspect
         self._bbox = (0, 0, 0, 0)
 
+        # ensure tag is tuple
         if isinstance(tags, tuple):
             self._tags = tags + (self.id,)
         elif isinstance(tags, str):
@@ -53,22 +57,23 @@ class BasePedal:
         else:
             return y
 
-    def draw(self, bbox, **kwargs):
+    def draw(self, x, y1, y2, **kwargs):
         """
         draws the pedal to the canvas with the given bbox
 
-        :param bbox: bounding box in the format (x1, y1, x2, y2):
-            x1: x coordinate of the top left of the rectangle
-            y1: y coordinate of the top left of the rectangle
-            x2: x coordinate of the bottom right of the rectangle
-            y2: y coordinate of the bottom right of the rectangle
+        :param x: x coordinate of the top left of the rectangle
+        :param y1: y coordinate of the top left of the rectangle
+        :param y2: y coordinate of the bottom of the rectangle
         :param kwargs: the keyword arguments to draw the background
+
+        :return: the width of the pedal
         """
 
         # base class functionality - draw outline
-        self._bbox = bbox
+        width = (y2 - y1) * self._aspect
+        self._bbox = (x, y1, x + width, y2)
         self.canvas.delete(self.id)
-        self.canvas.create_rounded_rectangle(self._bbox, 20, tags=self._tags, **kwargs)
+        self.canvas.create_rounded_rectangle(self._bbox, 20, tags=self._tags, padx=kwargs.get("width", 0) / 2, **kwargs)
 
         # functionality only for this class - draw selection buttons
         if type(self) == BasePedal:
@@ -88,6 +93,8 @@ class BasePedal:
                 button = self.canvas.create_rounded_rectangle(bbox, 10, fill="light blue", tags=self._tags)
                 self.canvas.create_text(text_pos, text=name, font=("Comic Sans MS", 20, "italic"), tags=self._tags + (button,))
                 self.canvas.add_button_binding(button, lambda e, n=name: self.canvas.add_pedal(n))
+
+        return width
 
     def delete(self):
         """
