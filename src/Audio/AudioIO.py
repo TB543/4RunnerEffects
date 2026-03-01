@@ -21,6 +21,7 @@ class AudioIO:
         self._stream: Stream | None = None
         self._effects = Pedalboard()
         self._start_stream()
+        self.refresh_devices()
 
     def __enter__(self):
         """
@@ -151,7 +152,4 @@ class AudioIO:
 
         # returns false if I/O devices are incompatible
         except PortAudioError:
-            return False
-
-        except ValueError:
-            return "test"
+            raise NotImplementedError("Port Audio Error")

@@ -13,7 +13,6 @@ class PedalBoard(CTkCanvas):
     CONTENT_PADDING = 10
     SCROLLBAR_PADDING = 50
     BASE_PEDAL_ASPECT = 2 / 3
-    BASE_PEDAL_KWARGS = {"fill": "gray", "width": 4}
 
     def __init__(self, parent):
         """
@@ -99,16 +98,6 @@ class PedalBoard(CTkCanvas):
         self.tag_bind(tag_or_id, "<ButtonRelease-1>", lambda e: self.move(tag_or_id, -2, -2), add="+")
         if callback:
             self.tag_bind(tag_or_id, "<ButtonRelease-1>", callback, add="+")
-
-    def remove_button_binding(self, tag_or_id):
-        """
-        removes button bindings from a canvas object
-
-        :param tag_or_id: tag or id of the canvas object
-        """
-
-        self.tag_unbind(tag_or_id, "<Button-1>")
-        self.tag_unbind(tag_or_id, "<ButtonRelease-1>")
 
     def create_rounded_rectangle(self, bbox, radius, **kwargs):
         """
@@ -211,12 +200,7 @@ class PedalBoard(CTkCanvas):
             scrollbar_width = bbox[2] - bbox[0]
             min_x = PedalBoard.SCROLLBAR_PADDING / 2
             max_x = self._width - (PedalBoard.SCROLLBAR_PADDING / 2) - scrollbar_width
-
-            # clamp so scrollbar cant go too far left/right
-            if bbox[0] + scrollbar_dx < min_x:
-                scrollbar_dx = min_x - bbox[0]
-            elif bbox[2] + scrollbar_dx > max_x + scrollbar_width:
-                scrollbar_dx = max_x + scrollbar_width - bbox[2]
+            scrollbar_dx = max(min_x - bbox[0], min(scrollbar_dx, max_x + scrollbar_width - bbox[2]))
 
             # calculate content scroll amount
             scroll_percent = (bbox[0] + scrollbar_dx - min_x) / (max_x - min_x)
@@ -273,7 +257,7 @@ class PedalBoard(CTkCanvas):
             x += pedal.draw(x, *self._pedals_height)
 
         # adjust drawn object positions
-        self._add_pedals_width = self._add_pedals_menu.draw(x, *self._pedals_height, **PedalBoard.BASE_PEDAL_KWARGS)
+        self._add_pedals_width = self._add_pedals_menu.draw(x, *self._pedals_height)
         self._content_width = x + self._add_pedals_width + PedalBoard.CONTENT_PADDING
         self.move(self._title_tag, dx * .5, dy * .07)
         self.move(self._settings_tag, dx * .95, dy * .08)

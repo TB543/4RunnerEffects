@@ -1,10 +1,13 @@
 from UI.Pedals.BasePedal import BasePedal
+from UI.Widgets import *
 
 
 class ChorusPedal(BasePedal):
     """
     a class to represent a Chorus Pedal
     """
+
+    DRAW_KWARGS = {"fill": "blue", "radius": 20, "padx": 1}
 
     def __init__(self, canvas, tags):
         """
@@ -27,4 +30,6 @@ class ChorusPedal(BasePedal):
         :return: the width of the pedal
         """
 
-        return super().draw(x, y1, y2, fill="blue")
+        width = super().draw(x, y1, y2)
+        Knob(self.canvas, self.rel_pos(.5, .5), 50, lambda v: self.destroy(), self.tags)
+        return width
