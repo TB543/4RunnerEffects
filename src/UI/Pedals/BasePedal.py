@@ -6,21 +6,22 @@ class BasePedal:
     a base class to represent an effects pedal UI
     """
 
-    DRAW_KWARGS = {"fill": "gray", "width": 4, "radius": 20, "padx": 1}
+    DRAW_KWARGS = {"fill": "gray", "width": 4, "radius": 20, "padx": 1, "aspect": 2 / 3}
 
-    def __init__(self, canvas, tags, aspect):
+    def __init__(self, canvas, audio, tags):
         """
         initializes the pedal and its fields
 
         :param canvas: the pedalboard canvas to draw onto
+        :param audio: the audio stream object to modify
         :param tags: tags to use when drawing the canvas objects so parent class can control behavior
-        :param aspect: the aspect ratio of the pedal
         """
 
         # set fields
+        super().__init__()
         self.canvas = canvas
+        self._audio = audio
         self.id = str(uuid4())
-        self._aspect = aspect
         self._bbox = (0, 0, 0, 0)
 
         # ensure tag is tuple
@@ -58,6 +59,17 @@ class BasePedal:
         else:
             return y
 
+    def modify_effect(self, attr, value):
+        """
+        modified the audio effect todo add min and max values + normalize
+
+        :param attr: the attribute to modify
+        :param value: the new value for the attribute
+        """
+
+        with self._audio.modify():
+            setattr(self, attr, value)
+
     def draw(self, x, y1, y2):
         """
         draws the pedal to the canvas with the given bbox
@@ -73,7 +85,7 @@ class BasePedal:
         kwargs = self.DRAW_KWARGS.copy()
         r = kwargs.pop("radius", 0)
         padx = (kwargs.get("width", 2) / 2) + kwargs.pop("padx", 0)
-        width = (y2 - y1) * self._aspect
+        width = (y2 - y1) * kwargs.pop("aspect", 2 / 3)
 
         # base class functionality - delete and re-draw outline
         self._bbox = (x, y1, x + width, y2)

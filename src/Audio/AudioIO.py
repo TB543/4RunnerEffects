@@ -1,8 +1,9 @@
+from threading import Lock
 from sounddevice import query_devices, default, Stream, PortAudioError
 from pedalboard import Pedalboard
 
 
-class AudioIO:
+class AudioIO(Pedalboard):
     """
     a class for managing audio input/output devices and passing the audio stream
 
@@ -14,12 +15,13 @@ class AudioIO:
         initializes the audio stream to use the default input and output devices
         """
 
+        super().__init__()
         self.input_devices = []
         self.output_devices = []
         self._input_device = query_devices(default.device[0])
         self._output_device = query_devices(default.device[1])
         self._stream: Stream | None = None
-        self._effects = Pedalboard()
+        self._lock = Lock()
         self._start_stream()
         self.refresh_devices()
 
@@ -28,15 +30,15 @@ class AudioIO:
         accesses the effects within a context manager where audio stream is paused
         """
 
-        self._stream.stop()
-        return self._effects
+        self._lock.acquire()
+        return self
 
     def __exit__(self, *args):
         """
         exits the context manager and resumes the audio stream
         """
 
-        self._stream.start()
+        self._lock.release()
 
     @property
     def input_device(self):
@@ -80,7 +82,7 @@ class AudioIO:
         self._output_device = query_devices(int(name.split(" ")[0]))
         self._start_stream()
 
-    def modify_effects(self):
+    def modify(self):
         """
         function to call when entering the context manager to modify the audio effects
         while ensuring the audio stream is paused:
@@ -129,7 +131,8 @@ class AudioIO:
         see Stream docs for more details
         """
 
-        outdata[:] = self._effects(indata, self._input_device["default_samplerate"])
+        with self._lock:
+            outdata[:] = self(indata, self._input_device["default_samplerate"])
 
     def _start_stream(self):
         """
@@ -152,4 +155,4 @@ class AudioIO:
 
         # returns false if I/O devices are incompatible
         except PortAudioError:
-            raise NotImplementedError("Port Audio Error")
+            print("error setting audio stream")

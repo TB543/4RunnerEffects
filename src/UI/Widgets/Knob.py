@@ -40,7 +40,7 @@ class Knob:
 
     def draw(self, pos):
         """
-        draws the knob to the screen
+        draws the knob to the screen todo make pretty
 
         :param pos: the current position of the knob (can be changed by canvas moves)
 
@@ -96,4 +96,4 @@ class Knob:
         # calculates new value
         total_sweep = (Knob.MAX_ANGLE - Knob.MIN_ANGLE) % (2 * pi)
         current_position = (self.angle - Knob.MIN_ANGLE) % (2 * pi)
-        self._callback(current_position / total_sweep)
+        self._callback((current_position / total_sweep))

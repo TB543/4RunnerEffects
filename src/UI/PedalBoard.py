@@ -2,6 +2,7 @@ from customtkinter import CTkCanvas
 from tkinter import EventType, Event
 from uuid import uuid4
 from UI.Pedals import *
+from Audio.AudioIO import AudioIO
 
 
 class PedalBoard(CTkCanvas):
@@ -12,7 +13,6 @@ class PedalBoard(CTkCanvas):
     CONTENT_HEIGHT_RELATIVE = (.15, .9) # height ranges from 15% of screen to 90%
     CONTENT_PADDING = 10
     SCROLLBAR_PADDING = 50
-    BASE_PEDAL_ASPECT = 2 / 3
 
     def __init__(self, parent):
         """
@@ -47,9 +47,10 @@ class PedalBoard(CTkCanvas):
         self.add_button_binding(self._settings_tag)
 
         # creates the add pedals menu
-        self._pedals = []
+        self._pedals = AudioIO()
+        self._pedals_ui = []
         self._pedals_height = (0, 0)
-        self._add_pedals_menu = BasePedal(self, self._content_tag, PedalBoard.BASE_PEDAL_ASPECT)
+        self._add_pedals_menu = BasePedal(self, self._pedals, self._content_tag)
         self._add_pedals_width = 0
 
     def add_pedal(self, name):
@@ -63,12 +64,13 @@ class PedalBoard(CTkCanvas):
         pedal = None
         match name:
             case "Chorus":
-                pedal = ChorusPedal(self, self._content_tag)
+                pedal = ChorusPedal(self, self._pedals, self._content_tag)
 
-        # draw
+        # draw pedal and add effect to audio stream
         x = self._content_width - self.CONTENT_PADDING - self._scroll_x - self._add_pedals_width
-        self._pedals.append(pedal)
         width = pedal.draw(x, *self._pedals_height)
+        with self._pedals.modify() as effects:
+            effects.append(pedal)
 
         # adjust remaining content
         self.move(self._add_pedals_menu.id, width, 0)
@@ -78,7 +80,7 @@ class PedalBoard(CTkCanvas):
 
     def delete_pedal(self, pedal_id):
         """
-        removes a pedal from the board
+        removes a pedal from the board todo
 
         :param pedal_id: id of the pedal to delete
         """
@@ -157,6 +159,14 @@ class PedalBoard(CTkCanvas):
             self.create_line(x1, y1 + radius, x1, y2 - radius, **kwargs)
             self.create_line(x2, y1 + radius, x2, y2 - radius, **kwargs)
         return uuid
+
+    def destroy(self):
+        """
+        closes the audio stream on destroy
+        """
+
+        self._pedals.destroy()
+        super().destroy()
 
     def _set_scroll(self, relx):
         """
@@ -250,7 +260,7 @@ class PedalBoard(CTkCanvas):
         self._scroll_x = 0
         self._content_width = 0
 
-        # redraws pedals
+        # redraws pedals todo pedalboard doesnt store UI part
         self._pedals_height = (self._height * PedalBoard.CONTENT_HEIGHT_RELATIVE[0], self._height * PedalBoard.CONTENT_HEIGHT_RELATIVE[1])
         x = PedalBoard.CONTENT_PADDING
         for pedal in self._pedals:
