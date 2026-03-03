@@ -10,9 +10,9 @@ class Knob:
     """
 
     MIN_ANGLE = radians(230)
-    MAX_ANGLE = radians(140)
+    MAX_ANGLE = radians(130)
 
-    def __init__(self, canvas: CTkCanvas, pos, r, callback, tags):
+    def __init__(self, canvas: CTkCanvas, pos, r, callback, tags, value=0):
         """
         creates the knob widget
 
@@ -22,6 +22,7 @@ class Knob:
         :param callback: the callback function to call when the knob value changes
             should have 1 parameter which is a normalized value between 0 and 1 representing knob rotation
         :param tags: the tags to draw the knob with
+        :param value: the knobs value normalized between 0 and 1
         """
 
         # sets fields
@@ -33,7 +34,8 @@ class Knob:
         self._mouse_angle = None
 
         # draws and adds functionality
-        self.angle = Knob.MIN_ANGLE
+        angle_range = (Knob.MAX_ANGLE - Knob.MIN_ANGLE) % (2 * pi)
+        self.angle = (value * angle_range + Knob.MIN_ANGLE) % (2 * pi)
         self._center_id = self.draw(pos)
         self.canvas.tag_bind(self._id, "<Button-1>", self._rotate)
         self.canvas.tag_bind(self._id, "<B1-Motion>", self._rotate)
@@ -94,6 +96,6 @@ class Knob:
         self.canvas.event_generate("<Button-1>", x=pos[0], y=pos[1], state=256)
 
         # calculates new value
-        total_sweep = (Knob.MAX_ANGLE - Knob.MIN_ANGLE) % (2 * pi)
+        angle_range = (Knob.MAX_ANGLE - Knob.MIN_ANGLE) % (2 * pi)
         current_position = (self.angle - Knob.MIN_ANGLE) % (2 * pi)
-        self._callback((current_position / total_sweep))
+        self._callback((current_position / angle_range))

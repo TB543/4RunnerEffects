@@ -1,2 +1,2 @@
 from UI.Pedals.BasePedal import BasePedal
-from UI.Pedals.ChorusPedal import ChorusPedal
+from UI.Pedals.GainPedal import GainPedal

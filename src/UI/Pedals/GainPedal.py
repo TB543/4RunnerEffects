@@ -1,18 +1,20 @@
-from pedalboard import Chorus
+from pedalboard import Gain
 from UI.Pedals.BasePedal import BasePedal
 from UI.Widgets import *
 
 
-class ChorusPedal(BasePedal, Chorus):
+class GainPedal(BasePedal):
     """
-    a class to represent a Chorus Pedal
+    a class to represent a Gain Pedal
     """
 
     DRAW_KWARGS = {"fill": "blue", "radius": 20, "padx": 1, "aspect": 2 / 3}
+    MIN_MAX_VALUES = {"gain_db": (0, 20)}
+    EFFECT = Gain
 
     def draw(self, x, y1, y2):
         """
-        draws the pedal to the canvas with the given bbox todo make pretty and add sound mods
+        draws the pedal to the canvas with the given bbox todo make pretty
 
         :param x: x coordinate of the top left of the rectangle
         :param y1: y coordinate of the top left of the rectangle
@@ -22,5 +24,5 @@ class ChorusPedal(BasePedal, Chorus):
         """
 
         width = super().draw(x, y1, y2)
-        Knob(self.canvas, self.rel_pos(.5, .5), 50, lambda v: print("implement audio effect modification"), self.tags)
+        Knob(self.canvas, self.rel_pos(.5, .5), 50, lambda v: self.modify("gain_db", v), self.tags, self.norm("gain_db"))
         return width

@@ -7,6 +7,8 @@ class BasePedal:
     """
 
     DRAW_KWARGS = {"fill": "gray", "width": 4, "radius": 20, "padx": 1, "aspect": 2 / 3}
+    MIN_MAX_VALUES = {}  # {effect: (min, max)}
+    EFFECT = None
 
     def __init__(self, canvas, audio, tags):
         """
@@ -23,6 +25,8 @@ class BasePedal:
         self._audio = audio
         self.id = str(uuid4())
         self._bbox = (0, 0, 0, 0)
+        if self.EFFECT is not None:
+            self.effect = self.EFFECT()
 
         # ensure tag is tuple
         if isinstance(tags, tuple):
@@ -59,16 +63,26 @@ class BasePedal:
         else:
             return y
 
-    def modify_effect(self, attr, value):
+    def norm(self, attr):
         """
-        modified the audio effect todo add min and max values + normalize
+        normalizes the value of a given attribute
+
+        :param attr: the attribute to normalize
+        """
+
+        return (getattr(self.effect, attr) - self.MIN_MAX_VALUES[attr][0]) / (self.MIN_MAX_VALUES[attr][1] - self.MIN_MAX_VALUES[attr][0])
+
+    def modify(self, attr, value):
+        """
+        modified the audio effect
 
         :param attr: the attribute to modify
         :param value: the new value for the attribute
         """
 
+        value = self.MIN_MAX_VALUES[attr][0] + value * (self.MIN_MAX_VALUES[attr][1] - self.MIN_MAX_VALUES[attr][0])
         with self._audio.modify():
-            setattr(self, attr, value)
+            setattr(self.effect, attr, value)
 
     def draw(self, x, y1, y2):
         """
@@ -119,6 +133,8 @@ class BasePedal:
     def destroy(self):
         """
         unbinds all bindings and deletes the canvas objects for the pedal
+
+        :return: the width of the pedal
         """
 
         for elem in self.canvas.find_withtag(self.id):
@@ -126,3 +142,4 @@ class BasePedal:
                 for event in ["<Button-1>", "<ButtonRelease-1>", "<B1-Motion>"]:
                     self.canvas.tag_unbind(tag, event)
         self.canvas.delete(self.id)
+        return self._bbox[2] - self._bbox[0]
