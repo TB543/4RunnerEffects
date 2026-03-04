@@ -121,7 +121,7 @@ class BasePedal:
         self.canvas.create_text(pos, text="Add Pedal", font=("Comic Sans MS", 20), tags=self.tags)
 
         # calculates button positions
-        buttons = ["Gain"]
+        buttons = ["Gain", "Chorus", "Distortion"]
         x1 = self.rel_pos(.1)
         x2 = self.rel_pos(.9)
         for y, name in enumerate(buttons):

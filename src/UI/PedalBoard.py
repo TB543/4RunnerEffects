@@ -67,6 +67,10 @@ class PedalBoard(CTkCanvas):
         match name:
             case "Gain":
                 pedal = GainPedal(self, self._audio, self._content_tag)
+            case "Chorus":
+                pedal = ChorusPedal(self, self._audio, self._content_tag)
+            case "Distortion":
+                pedal = DistortionPedal(self, self._audio, self._content_tag)
 
         # draw pedal and add effect to audio stream
         x = self._content_width - self.CONTENT_PADDING - self._scroll_x - self._add_pedals_width
