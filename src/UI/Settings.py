@@ -23,11 +23,9 @@ class Settings(CTkFrame):
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
 
-        # title, close button, and error notification
+        # title, close button
         CTkLabel(self, text="Settings", font=("Comic Sans MS", 30, "bold")).grid(row=0, column=0, columnspan=3)
         CTkButton(self, text="X", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", width=50, height=50, command=self.place_forget).grid(row=0, column=1, sticky="ne", padx=20, pady=20)
-        self.failed_label = CTkLabel(self, text="Selected Input and Output Devices are not Compatible", font=("Comic Sans MS", 15), text_color="red")
-        self.validate_stream()
 
         # audio input selection
         CTkLabel(self, text="Audio In:", font=("Comic Sans MS", 20)).grid(row=1, column=0, sticky="s")
@@ -40,6 +38,11 @@ class Settings(CTkFrame):
         self.outputs = CTkOptionMenu(self, variable=StringVar(self, self.audio.output_device), font=("Comic Sans MS", 15), command=self.set_audio_out)
         self.outputs.bind("<Enter>", lambda e: self.update_audio_devices())
         self.outputs.grid(row=2, column=1, sticky="n")
+
+        # error label and exit button
+        self.failed_label = CTkLabel(self, text="Selected Input and Output Devices are not Compatible", font=("Comic Sans MS", 15), text_color="red")
+        CTkButton(self, text="Exit Program", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", height=50, command=self.winfo_toplevel().destroy).grid(row=3, column=0, columnspan=2, padx=20, pady=20)
+        self.validate_stream()
 
     def update_audio_devices(self):
         """
