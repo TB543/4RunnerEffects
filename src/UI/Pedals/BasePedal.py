@@ -11,19 +11,17 @@ class BasePedal:
     MIN_MAX_VALUES = {}  # {effect: (min, max)}
     EFFECT = None
 
-    def __init__(self, canvas: CTkCanvas, audio, tags):
+    def __init__(self, canvas: CTkCanvas, tags):
         """
         initializes the pedal and its fields
 
         :param canvas: the pedalboard canvas to draw onto
-        :param audio: the audio stream object to modify
         :param tags: tags to use when drawing the canvas objects so parent class can control behavior
         """
 
         # set fields
         super().__init__()
         self.canvas = canvas
-        self._audio = audio
         self.id = str(uuid4())
         self._bbox = (0, 0, 0, 0)
         if self.EFFECT is not None:
@@ -82,8 +80,7 @@ class BasePedal:
         """
 
         value = self.MIN_MAX_VALUES[attr][0] + value * (self.MIN_MAX_VALUES[attr][1] - self.MIN_MAX_VALUES[attr][0])
-        with self._audio.modify():
-            setattr(self.effect, attr, value)
+        setattr(self.effect, attr, value)
 
     def draw(self, x, y1, y2):
         """

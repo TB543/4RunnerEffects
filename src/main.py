@@ -1,9 +1,9 @@
 from customtkinter import CTk
-from UI.PedalBoard import PedalBoard
+from UI.PedalboardUI import PedalboardUI
 
 
 root = CTk()
 root.geometry("1024x600")
-board = PedalBoard(root)
+board = PedalboardUI(root)
 board.pack(fill="both", expand=True)
 root.mainloop()

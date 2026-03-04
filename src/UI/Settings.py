@@ -1,4 +1,5 @@
 from customtkinter import CTkFrame, CTkButton, CTkLabel, CTkOptionMenu, StringVar
+from pedalboard.io import AudioStream
 
 
 class Settings(CTkFrame):
@@ -28,53 +29,47 @@ class Settings(CTkFrame):
         CTkButton(self, text="X", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", width=50, height=50, command=self.place_forget).grid(row=0, column=1, sticky="ne", padx=20, pady=20)
 
         # audio input selection
+        self.input_device = StringVar(self, "Select input device...")
         CTkLabel(self, text="Audio In:", font=("Comic Sans MS", 20)).grid(row=1, column=0, sticky="s")
-        self.inputs = CTkOptionMenu(self, variable=StringVar(self, self.audio.input_device), font=("Comic Sans MS", 15), command=self.set_audio_in)
+        self.inputs = CTkOptionMenu(self, variable=self.input_device, font=("Comic Sans MS", 15), command=self.set_audio_in)
         self.inputs.bind("<Enter>", lambda e: self.update_audio_devices())
         self.inputs.grid(row=2, column=0, sticky="n")
 
         # audio output selection
+        self.output_device = StringVar(self, "Select output device...")
         CTkLabel(self, text="Audio Out:", font=("Comic Sans MS", 20)).grid(row=1, column=1, sticky="s")
-        self.outputs = CTkOptionMenu(self, variable=StringVar(self, self.audio.output_device), font=("Comic Sans MS", 15), command=self.set_audio_out)
+        self.outputs = CTkOptionMenu(self, variable=self.output_device, font=("Comic Sans MS", 15), command=self.set_audio_out)
         self.outputs.bind("<Enter>", lambda e: self.update_audio_devices())
         self.outputs.grid(row=2, column=1, sticky="n")
 
         # error label and exit button
         self.failed_label = CTkLabel(self, text="Selected Input and Output Devices are not Compatible", font=("Comic Sans MS", 15), text_color="red")
         CTkButton(self, text="Exit Program", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", height=50, command=self.winfo_toplevel().destroy).grid(row=3, column=0, columnspan=2, padx=20, pady=20)
-        self.validate_stream()
 
     def update_audio_devices(self):
         """
         updates the lists of input and output devices
         """
 
-        self.audio.refresh_devices()
-        self.inputs.configure(values=self.audio.input_devices)
-        self.outputs.configure(values=self.audio.output_devices)
+        self.inputs.configure(values=AudioStream.input_device_names)
+        self.outputs.configure(values=AudioStream.output_device_names)
 
     def set_audio_in(self, value):
         """
         sets the audio input device
         """
 
-        self.audio.input_device = value
-        self.validate_stream()
+        if self.master.modify_audio_stream(self.input_device.get(), self.output_device.get()):
+            self.failed_label.grid_forget()
+        else:
+            self.failed_label.grid(row=2, column=0, columnspan=2)
 
     def set_audio_out(self, value):
         """
         sets the audio output device
         """
 
-        self.audio.output_device = value
-        self.validate_stream()
-
-    def validate_stream(self):
-        """
-        checks if the audio devices are compatible
-        """
-
-        if self.audio.compatible_stream:
+        if self.master.modify_audio_stream(self.input_device.get(), self.output_device.get()):
             self.failed_label.grid_forget()
         else:
             self.failed_label.grid(row=2, column=0, columnspan=2)
