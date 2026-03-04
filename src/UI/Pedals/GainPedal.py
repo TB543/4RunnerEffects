@@ -8,13 +8,13 @@ class GainPedal(BasePedal):
     a class to represent a Gain Pedal
     """
 
-    DRAW_KWARGS = {"fill": "blue", "radius": 20, "padx": 1, "aspect": 2 / 3}
+    DRAW_KWARGS = {"fill": "#1c1c1c", "radius": 20, "padx": 1, "aspect": 2 / 3}
     MIN_MAX_VALUES = {"gain_db": (0, 20)}
     EFFECT = Gain
 
     def draw(self, x, y1, y2):
         """
-        draws the pedal to the canvas with the given bbox todo make pretty
+        draws the pedal to the canvas with the given bbox
 
         :param x: x coordinate of the top left of the rectangle
         :param y1: y coordinate of the top left of the rectangle
@@ -24,5 +24,6 @@ class GainPedal(BasePedal):
         """
 
         width = super().draw(x, y1, y2)
-        Knob(self.canvas, self.rel_pos(.5, .5), 50, lambda v: self.modify("gain_db", v), self.tags, self.norm("gain_db"))
+        self.canvas.create_text(self.rel_pos(.5, .6), text="Gain", fill="white", font=("Comic Sans MS", 30, "italic bold"), tags=self.tags)
+        Knob(self.canvas, self.rel_pos(.5, .3), 50, lambda v: self.modify("gain_db", v), self.tags, self.norm("gain_db"))
         return width

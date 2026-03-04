@@ -1,4 +1,5 @@
 from uuid import uuid4
+from customtkinter import CTkCanvas
 
 
 class BasePedal:
@@ -10,7 +11,7 @@ class BasePedal:
     MIN_MAX_VALUES = {}  # {effect: (min, max)}
     EFFECT = None
 
-    def __init__(self, canvas, audio, tags):
+    def __init__(self, canvas: CTkCanvas, audio, tags):
         """
         initializes the pedal and its fields
 
@@ -101,13 +102,18 @@ class BasePedal:
         padx = (kwargs.get("width", 2) / 2) + kwargs.pop("padx", 0)
         width = (y2 - y1) * kwargs.pop("aspect", 2 / 3)
 
-        # base class functionality - delete and re-draw outline
+        # delete and re-draw outline
         self._bbox = (x, y1, x + width, y2)
         self.destroy()
         self.canvas.create_rounded_rectangle(self._bbox, r, tags=self.tags, padx=padx, **kwargs)
 
-        # end base class functionality
+        # draw delete button - every pedal but base pedal
         if type(self) != BasePedal:
+            delete_pos = self.rel_pos(.5, .9)
+            delete_bbox = (delete_pos[0] - 25, delete_pos[1] - 25, delete_pos[0] + 25, delete_pos[1] + 25)
+            tag = self.canvas.create_rounded_rectangle(delete_bbox, 5, fill="#1F6AA5", width=3, tags=self.tags)
+            self.canvas.create_text(delete_pos, text="🗑", font=("Comic Sans MS", 20), tags=self.tags + (tag,))
+            self.canvas.add_button_binding(tag, lambda: self.canvas.delete_pedal(self))
             return width
 
         # functionality only for this class - draw selection buttons
@@ -115,7 +121,7 @@ class BasePedal:
         self.canvas.create_text(pos, text="Add Pedal", font=("Comic Sans MS", 20), tags=self.tags)
 
         # calculates button positions
-        buttons = ["Chorus", "Distortion", "Phaser"]
+        buttons = ["Gain"]
         x1 = self.rel_pos(.1)
         x2 = self.rel_pos(.9)
         for y, name in enumerate(buttons):
@@ -126,7 +132,7 @@ class BasePedal:
             # draws buttons and text
             button = self.canvas.create_rounded_rectangle(bbox, 10, fill="light blue", tags=self.tags)
             self.canvas.create_text(text_pos, text=name, font=("Comic Sans MS", 20, "italic"), tags=self.tags + (button,))
-            self.canvas.add_button_binding(button, lambda e, n=name: self.canvas.add_pedal(n))
+            self.canvas.add_button_binding(button, lambda n=name: self.canvas.add_pedal(n))
 
         return width
 

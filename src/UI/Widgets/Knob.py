@@ -42,17 +42,20 @@ class Knob:
 
     def draw(self, pos):
         """
-        draws the knob to the screen todo make pretty
+        draws the knob to the screen
 
         :param pos: the current position of the knob (can be changed by canvas moves)
 
         :return: the id of the circle that contains the rotational center of the knob
         """
 
-        tag = self.canvas.create_aa_circle(*pos, self.r, fill="black", tags=self.tags)
-        x = pos[0] + self.r * sin(self.angle)
-        y = pos[1] - self.r * cos(self.angle)
-        self.canvas.create_line(*pos, x, y, fill="white", tags=self.tags)
+        self.canvas.create_aa_circle(*pos, self.r, fill="black", tags=self.tags)
+        tag = self.canvas.create_aa_circle(*pos, self.r - 2, fill="#333333", tags=self.tags)
+        x1 = pos[0] + (self.r * .15) * sin(self.angle)
+        y1 = pos[1] - (self.r * .15) * cos(self.angle)
+        x2 = pos[0] + self.r * sin(self.angle)
+        y2 = pos[1] - self.r * cos(self.angle)
+        self.canvas.create_line(x1, y1, x2, y2, fill="white", width=3, tags=self.tags)
         return tag
 
     def _rotate(self, event):

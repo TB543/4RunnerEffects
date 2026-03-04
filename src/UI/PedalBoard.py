@@ -1,6 +1,7 @@
 from customtkinter import CTkCanvas
 from tkinter import EventType, Event
 from uuid import uuid4
+from UI.Settings import Settings
 from UI.Pedals import *
 from Audio.AudioIO import AudioIO
 
@@ -40,18 +41,19 @@ class PedalBoard(CTkCanvas):
         self.create_text(5, 5, text="4Runner FX", font=("Comic Sans MS", 25, "bold"), tags=self._title_tag)
         self.create_text(0, 0, text="4Runner FX", font=("Comic Sans MS", 25, "bold"), fill="white", tags=self._title_tag)
 
-        # creates settings button
-        self._settings_tag = "settings"
-        self.create_rounded_rectangle((-25, -25, 25, 25), 5, fill="#1F6AA5", width=3, tags=self._settings_tag)
-        self.create_text(1, -1, text="⚙", font=("Comic Sans MS", 25, "bold"), tags=self._settings_tag)
-        self.add_button_binding(self._settings_tag)
-
         # creates the add pedals menu
         self._audio = AudioIO()
         self._pedals = []
         self._pedals_height = (0, 0)
         self._add_pedals_menu = BasePedal(self, self._pedals, self._content_tag)
         self._add_pedals_width = 0
+
+        # creates settings button
+        settings = Settings(self, self._audio, fg_color="#2b2b2b", bg_color="#252525", border_color="black", border_width=2, corner_radius=10)
+        self._settings_tag = "settings"
+        self.create_rounded_rectangle((-25, -25, 25, 25), 5, fill="#1F6AA5", width=3, tags=self._settings_tag)
+        self.create_text(1, -1, text="⚙", font=("Comic Sans MS", 25, "bold"), tags=self._settings_tag)
+        self.add_button_binding(self._settings_tag, lambda: settings.place(relx=.5, rely=.5, relwidth=.8, relheight=.9, anchor="center"))
 
     def add_pedal(self, name):
         """
@@ -63,7 +65,7 @@ class PedalBoard(CTkCanvas):
         # create pedal
         pedal = None
         match name:
-            case "Chorus":
+            case "Gain":
                 pedal = GainPedal(self, self._audio, self._content_tag)
 
         # draw pedal and add effect to audio stream
@@ -94,6 +96,8 @@ class PedalBoard(CTkCanvas):
 
         # shifts remaining pedals over
         dx = -pedal.destroy()
+        self._content_width += dx
+        self._draw_scrollbar()
         self.move(self._add_pedals_menu.id, dx, 0)
         for pedal in self._pedals[index:]:
             self.move(pedal.id, dx, 0)
@@ -106,13 +110,12 @@ class PedalBoard(CTkCanvas):
 
         :param tag_or_id: tag or id of the canvas object
         :param callback: callback function
-            must have a parameter for the click event
         """
 
         self.tag_bind(tag_or_id, "<Button-1>", lambda e: self.move(tag_or_id, 2, 2), add="+")
         self.tag_bind(tag_or_id, "<ButtonRelease-1>", lambda e: self.move(tag_or_id, -2, -2), add="+")
         if callback:
-            self.tag_bind(tag_or_id, "<ButtonRelease-1>", callback, add="+")
+            self.tag_bind(tag_or_id, "<ButtonRelease-1>", lambda e: callback(), add="+")
 
     def create_rounded_rectangle(self, bbox, radius, **kwargs):
         """
@@ -257,6 +260,11 @@ class PedalBoard(CTkCanvas):
             event.type = EventType.Motion
             event.x = 0
             self._scroll(event)
+
+        # ensures all content is visible when scrollbar is hidden
+        else:
+            self.move(self._content_tag, self._scroll_x, 0)
+            self._scroll_x = 0
 
     def _resize(self, event):
         """

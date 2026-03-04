@@ -6,8 +6,6 @@ from pedalboard import Pedalboard
 class AudioIO(Pedalboard):
     """
     a class for managing audio input/output devices and passing the audio stream
-
-    TODO make input and output devices properties and only give devices that are compatible
     """
 
     def __init__(self):
@@ -18,6 +16,7 @@ class AudioIO(Pedalboard):
         super().__init__()
         self.input_devices = []
         self.output_devices = []
+        self.compatible_stream = False
         self._input_device = query_devices(default.device[0])
         self._output_device = query_devices(default.device[1])
         self._stream: Stream | None = None
@@ -151,8 +150,8 @@ class AudioIO(Pedalboard):
                 channels=1
             )
             self._stream.start()
-            return True
+            self.compatible_stream = True
 
         # returns false if I/O devices are incompatible
         except PortAudioError:
-            print("error setting audio stream")
+            self.compatible_stream = False
