@@ -89,15 +89,62 @@ class PedalboardUI(CTkCanvas):
         :param name: name of the effects pedal to add
         """
 
-        # create pedal
         pedal = None
         match name:
-            case "Gain":
-                pedal = GainPedal(self, self._content_tag)
+
+            # guitar
             case "Chorus":
                 pedal = ChorusPedal(self, self._content_tag)
             case "Distortion":
                 pedal = DistortionPedal(self, self._content_tag)
+            case "Phaser":
+                pedal = PhaserPedal(self, self._content_tag)
+            case "Clipping":
+                pedal = ClippingPedal(self, self._content_tag)
+
+            # loudness / range
+            case "Gain":
+                pedal = GainPedal(self, self._content_tag)
+            case "NoiseGate":
+                pedal = NoiseGatePedal(self, self._content_tag)
+            case "Limiter":
+                pedal = LimiterPedal(self, self._content_tag)
+            case "Compressor":
+                pedal = CompressorPedal(self, self._content_tag)
+
+            # filters / EQ
+            case "HighShelfFilter":
+                pedal = HighShelfFilterPedal(self, self._content_tag)
+            case "LowShelfFilter":
+                pedal = LowShelfFilterPedal(self, self._content_tag)
+            case "PeakFilter":
+                pedal = PeakFilterPedal(self, self._content_tag)
+            case "HighpassFilter":
+                pedal = HighpassFilterPedal(self, self._content_tag)
+            case "LowpassFilter":
+                pedal = LowpassFilterPedal(self, self._content_tag)
+            case "LadderFilter":
+                pedal = LadderFilterPedal(self, self._content_tag)
+
+            # spatial
+            case "Reverb":
+                pedal = ReverbPedal(self, self._content_tag)
+            case "Delay":
+                pedal = DelayPedal(self, self._content_tag)
+
+            # pitch
+            case "PitchShift":
+                pedal = PitchShiftPedal(self, self._content_tag)
+
+            # misc
+            case "Bitcrush":
+                pedal = BitcrushPedal(self, self._content_tag)
+            case "Resample":
+                pedal = ResamplePedal(self, self._content_tag)
+            case "MP3Compressor":
+                pedal = MP3CompressorPedal(self, self._content_tag)
+            case "GSMCompressor":
+                pedal = GSMCompressorPedal(self, self._content_tag)
 
         # draw pedal and add effect to audio stream
         x = self._content_width - self.CONTENT_PADDING - self._scroll_x - self._add_pedals_width
@@ -133,7 +180,7 @@ class PedalboardUI(CTkCanvas):
         for pedal in self._pedals[index:]:
             self.move(pedal.id, dx, 0)
 
-    def add_button_binding(self, tag_or_id, callback=None):
+    def add_button_binding(self, tag_or_id, callback=None, add=False):
         """
         adds button bindings to a canvas object
             adds button animation bindings
@@ -141,10 +188,12 @@ class PedalboardUI(CTkCanvas):
 
         :param tag_or_id: tag or id of the canvas object
         :param callback: callback function
+        :param add: pass in "+" to add another function (doesn't readd button animation functions)
         """
 
-        self.tag_bind(tag_or_id, "<Button-1>", lambda e: self.move(tag_or_id, 2, 2), add="+")
-        self.tag_bind(tag_or_id, "<ButtonRelease-1>", lambda e: self.move(tag_or_id, -2, -2), add="+")
+        if not add:
+            self.tag_bind(tag_or_id, "<Button-1>", lambda e: self.move(tag_or_id, 2, 2), add="+")
+            self.tag_bind(tag_or_id, "<ButtonRelease-1>", lambda e: self.move(tag_or_id, -2, -2), add="+")
         if callback:
             self.tag_bind(tag_or_id, "<ButtonRelease-1>", lambda e: callback(), add="+")
 

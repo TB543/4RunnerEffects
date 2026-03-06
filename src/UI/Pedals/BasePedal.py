@@ -113,23 +113,98 @@ class BasePedal:
             self.canvas.add_button_binding(tag, lambda: self.canvas.delete_pedal(self))
             return width
 
-        # functionality only for this class - draw selection buttons
+        # ========================= functionality only for this class - buttons to add pedals =========================
+
+        # sets up mappings for what to change the text to on page change
+        text_map = {
+            # ========================= headers =========================
+            "Guitar FX": " Guitar FX ",
+            " Guitar FX ": "Loudness/Range FX",
+            "Loudness/Range FX": " Loudness/Range FX ",
+            " Loudness/Range FX ": "Equalizers/Filters",
+            "Equalizers/Filters": " Equalizers/Filters ",
+            " Equalizers/Filters ": "Spatial FX",
+            "Spatial FX": "Pitch FX",
+            "Pitch FX": "Experimental FX",
+            "Experimental FX": " Experimental FX ",
+            " Experimental FX ": "Guitar FX",
+
+            # ========================= guitar-style fx =========================
+            "Chorus": "Clipping",
+            "Distortion": "",  # note: all values that are empty are placeholders for empty buttons
+            "Phaser": " ",
+            "Clipping": "Gain",
+            "": "NoiseGate",
+            " ": "Limiter",
+
+            # ========================= loudness/range fx  =========================
+            "Gain": "Compressor",
+            "NoiseGate": "  ",
+            "Limiter": "   ",
+            "Compressor": "HighShelfFilter",
+            "  ": "LowShelfFilter",
+            "   ": "PeakFilter",
+
+            # ========================= equalizers/filters =========================
+            "HighShelfFilter": "HighpassFilter",
+            "LowShelfFilter": "LowpassFilter",
+            "PeakFilter": "LadderFilter",
+            "HighpassFilter": "Reverb",
+            "LowpassFilter": "Delay",
+            "LadderFilter": "        ",
+
+            # ========================= spatial fx =========================
+            "Reverb": "PitchShift",
+            "Delay": "    ",
+            "        ": "     ",
+
+            # ========================= pitch fx =========================
+            "PitchShift": "Bitcrush",
+            "    ": "Resample",
+            "     ": "MP3Compressor",
+
+            # ========================= misc fx =========================
+            "Bitcrush": "GSMCompressor",
+            "Resample": "      ",
+            "MP3Compressor": "       ",
+            "GSMCompressor": "Chorus",
+            "      ": "Distortion",
+            "       ": "Phaser",
+        }
+        rev_text_map = {v: k for k, v in text_map.items()}
+
+        # draws header
         pos = self.rel_pos(relx=.5, rely=.07)
-        self.canvas.create_text(pos, text="Add Pedal", font=("Comic Sans MS", 20), tags=self.tags)
+        button_to_text = {"": self.canvas.create_text(pos, text="Guitar FX", font=("Comic Sans MS", 20), tags=self.tags)}
 
         # calculates button positions
-        buttons = ["Gain", "Chorus", "Distortion"]
+        button_texts = ["Chorus", "Distortion", "Phaser"]
         x1 = self.rel_pos(.1)
         x2 = self.rel_pos(.9)
-        for y, name in enumerate(buttons):
-            y = self.rel_pos(rely=(y + 1) / (len(buttons) + 1))
+        for y, name in enumerate(button_texts):
+            y = self.rel_pos(rely=(y + 1) / (len(button_texts) + 1.5))
             bbox = x1, y, x2, y + 50
             text_pos = bbox[0] + (bbox[2] - bbox[0]) / 2, bbox[1] + (bbox[3] - bbox[1]) / 2
 
             # draws buttons and text
             button = self.canvas.create_rounded_rectangle(bbox, 10, fill="light blue", tags=self.tags)
-            self.canvas.create_text(text_pos, text=name, font=("Comic Sans MS", 20, "italic"), tags=self.tags + (button,))
-            self.canvas.add_button_binding(button, lambda n=name: self.canvas.add_pedal(n))
+            text = self.canvas.create_text(text_pos, text=name, font=("Comic Sans MS", 20, "italic"), tags=self.tags + (button,))
+            button_to_text[button] = text
+            self.canvas.add_button_binding(button, lambda t=text: self.canvas.add_pedal(self.canvas.itemcget(t, "text")))
+
+        # adds left page button
+        x = self.rel_pos(.5)
+        y = self.rel_pos(rely=1)
+        button = self.canvas.create_rounded_rectangle((x - 75, y - 70, x - 25, y - 20), 10, fill="light blue", tags=self.tags)
+        self.canvas.create_text((x - 50, y - 45), text="←", font=("Comic Sans MS", 20, "italic"), tags=self.tags + (button,))
+        self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfig(t, text=rev_text_map[self.canvas.itemcget(t, "text")]) for t in button_to_text.values()])
+        self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfigure(b, state="normal" if self.canvas.itemcget(button_to_text[b], "text").strip() else "hidden") for b in button_to_text.keys()], add="+")
+
+        # adds right page button
+        button = self.canvas.create_rounded_rectangle((x + 25, y - 70, x + 75, y - 20), 10, fill="light blue", tags=self.tags)
+        self.canvas.create_text((x + 50, y - 45), text="→", font=("Comic Sans MS", 20, "italic"), tags=self.tags + (button,))
+        self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfig(t, text=text_map[self.canvas.itemcget(t, "text")]) for t in button_to_text.values()])
+        self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfigure(b, state="normal" if self.canvas.itemcget(button_to_text[b], "text").strip() else "hidden") for b in button_to_text.keys()], add="+")
 
         return width
 
