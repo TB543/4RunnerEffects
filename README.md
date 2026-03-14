@@ -110,5 +110,6 @@ Additional license notes:
 
 - Preset saving and loading
 - Audio recording
+- Make UI more pretty
 
 ---
