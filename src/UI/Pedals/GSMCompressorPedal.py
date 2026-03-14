@@ -8,7 +8,7 @@ class GSMCompressorPedal(BasePedal):
     a class to represent a GSMCompressor Pedal
     """
 
-    DRAW_KWARGS = {"fill": "black", "radius": 20, "padx": 1, "aspect": 2 / 3}
+    DRAW_KWARGS = {"fill": "#EB8A20", "radius": 20, "padx": 1, "aspect": 2 / 3}
     MIN_MAX_VALUES = {}
     EFFECT = GSMFullRateCompressor
 
@@ -24,5 +24,6 @@ class GSMCompressorPedal(BasePedal):
         """
 
         width = super().draw(x, y1, y2)
-
+        self.canvas.create_text(self.rel_pos(.5, .6), text="GSMCompressor", fill="black", font=("Comic Sans MS", 28, "italic bold"), tags=self.tags)
+        self.canvas.create_text(self.rel_pos(.5, .3), text="Status: On", fill="black", font=("Comic Sans MS", 28, "italic bold"), tags=self.tags)
         return width

@@ -8,8 +8,8 @@ class BitcrushPedal(BasePedal):
     a class to represent a Bitcrush Pedal
     """
 
-    DRAW_KWARGS = {"fill": "black", "radius": 20, "padx": 1, "aspect": 2 / 3}
-    MIN_MAX_VALUES = {}
+    DRAW_KWARGS = {"fill": "#18BD60", "radius": 20, "padx": 1, "aspect": 2 / 3}
+    MIN_MAX_VALUES = {"bit_depth": (1, 16)}
     EFFECT = Bitcrush
 
     def draw(self, x, y1, y2):
@@ -24,5 +24,6 @@ class BitcrushPedal(BasePedal):
         """
 
         width = super().draw(x, y1, y2)
-
+        self.canvas.create_text(self.rel_pos(.5, .6), text="Bitcrush", fill="white", font=("Comic Sans MS", 30, "italic bold"), tags=self.tags)
+        Knob(self.canvas, self.rel_pos(.5, .3), 50, lambda v: self.modify("bit_depth", v), self.tags, self.norm("bit_depth"))
         return width
