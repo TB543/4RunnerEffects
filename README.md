@@ -108,7 +108,8 @@ Additional license notes:
 
 ## Future Improvements
 
-- Preset saving and loading  
-- Hardware footswitch integration  
+- Preset saving and loading
+- Audio recording
+- Make UI more pretty
 
 ---
