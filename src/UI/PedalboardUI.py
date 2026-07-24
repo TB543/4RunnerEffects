@@ -4,6 +4,7 @@ from customtkinter import CTkCanvas
 from pedalboard.io import AudioStream
 from pedalboard import Pedalboard
 from UI.Settings import Settings
+from UI.Files import Files
 from UI.Pedals import *
 
 
@@ -44,7 +45,7 @@ class PedalboardUI(CTkCanvas):
 
         # creates the add pedals menu
         self._audio = None
-        self._pedals = []
+        self.pedals = []
         self._pedals_height = (0, 0)
         self._add_pedals_menu = BasePedal(self, self._content_tag)
         self._add_pedals_width = 0
@@ -55,6 +56,13 @@ class PedalboardUI(CTkCanvas):
         self.create_rounded_rectangle((-25, -25, 25, 25), 5, fill="#1F6AA5", width=3, tags=self._settings_tag)
         self.create_text(1, -1, text="⚙", font=("Comic Sans MS", 25, "bold"), tags=self._settings_tag)
         self.add_button_binding(self._settings_tag, lambda: settings.place(relx=.5, rely=.5, relwidth=.8, relheight=.9, anchor="center"))
+
+        # creates the file button
+        file = Files(self, fg_color="#2b2b2b", bg_color="#252525", border_color="black", border_width=2, corner_radius=10)
+        self._files_tag = "files"
+        self.create_rounded_rectangle((-100, -25, -50, 25), 5, fill="#1F6AA5", width=3, tags=self._files_tag)
+        self.create_text(-75, -1, text="📂", font=("Comic Sans MS", 25, "bold"), tags=self._files_tag)
+        self.add_button_binding(self._files_tag, lambda: file.place(relx=.5, rely=.5, relwidth=.8, relheight=.9, anchor="center"))
 
     def modify_audio_stream(self, input_device, output_device):
         """
@@ -72,7 +80,7 @@ class PedalboardUI(CTkCanvas):
 
         # attempts to create new stream
         try:
-            plugins = Pedalboard([pedal.effect for pedal in self._pedals])
+            plugins = Pedalboard([pedal.effect for pedal in self.pedals])
             self._audio = AudioStream(input_device_name=input_device, output_device_name=output_device, plugins=plugins)
             self._audio.__enter__()
             return True
@@ -82,11 +90,12 @@ class PedalboardUI(CTkCanvas):
             self._audio = None
             return False
 
-    def add_pedal(self, name):
+    def add_pedal(self, name, **kwargs):
         """
         adds a pedal to the board
 
         :param name: name of the effects pedal to add
+        :param kwargs: the configured settings for the pedal
         """
 
         pedal = None
@@ -146,10 +155,14 @@ class PedalboardUI(CTkCanvas):
             case "GSMCompressor":
                 pedal = GSMCompressorPedal(self, self._content_tag)
 
+        # sets pedal settings
+        for key, value in kwargs.items():
+            setattr(pedal.effect, key, value)
+
         # draw pedal and add effect to audio stream
         x = self._content_width - self.CONTENT_PADDING - self._scroll_x - self._add_pedals_width
         width = pedal.draw(x, *self._pedals_height)
-        self._pedals.append(pedal)
+        self.pedals.append(pedal)
         if self._audio:
             self._audio.plugins.append(pedal.effect)
 
@@ -167,8 +180,8 @@ class PedalboardUI(CTkCanvas):
         """
 
         # removes pedal
-        index = self._pedals.index(pedal)
-        self._pedals.remove(pedal)
+        index = self.pedals.index(pedal)
+        self.pedals.remove(pedal)
         if self._audio:
             self._audio.plugins.remove(pedal.effect)
 
@@ -177,7 +190,7 @@ class PedalboardUI(CTkCanvas):
         self._content_width += dx
         self._draw_scrollbar()
         self.move(self._add_pedals_menu.id, dx, 0)
-        for pedal in self._pedals[index:]:
+        for pedal in self.pedals[index:]:
             self.move(pedal.id, dx, 0)
 
     def add_button_binding(self, tag_or_id, callback=None, add=False):
@@ -365,7 +378,7 @@ class PedalboardUI(CTkCanvas):
         # redraws pedals
         self._pedals_height = (self._height * PedalboardUI.CONTENT_HEIGHT_RELATIVE[0], self._height * PedalboardUI.CONTENT_HEIGHT_RELATIVE[1])
         x = PedalboardUI.CONTENT_PADDING
-        for pedal in self._pedals:
+        for pedal in self.pedals:
             x += pedal.draw(x, *self._pedals_height)
 
         # adjust drawn object positions
@@ -373,4 +386,5 @@ class PedalboardUI(CTkCanvas):
         self._content_width = x + self._add_pedals_width + PedalboardUI.CONTENT_PADDING
         self.move(self._title_tag, dx * .5, dy * .07)
         self.move(self._settings_tag, dx * .95, dy * .08)
+        self.move(self._files_tag, dx * .95, dy * .08)
         self._draw_scrollbar()
