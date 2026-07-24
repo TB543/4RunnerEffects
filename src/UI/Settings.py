@@ -18,6 +18,7 @@ class Settings(CTkFrame):
 
         # initializes class and configures grid
         super().__init__(parent, **kwargs)
+        self.pedalboard = parent
         self.audio = audio
         self.rowconfigure(1, weight=1)
         self.rowconfigure(2, weight=1)
@@ -59,7 +60,7 @@ class Settings(CTkFrame):
         sets the audio input device
         """
 
-        if self.master.modify_audio_stream(self.input_device.get(), self.output_device.get()):
+        if self.pedalboard.modify_audio_stream(self.input_device.get(), self.output_device.get()):
             self.failed_label.grid_forget()
         else:
             self.failed_label.grid(row=2, column=0, columnspan=2)
@@ -69,7 +70,7 @@ class Settings(CTkFrame):
         sets the audio output device
         """
 
-        if self.master.modify_audio_stream(self.input_device.get(), self.output_device.get()):
+        if self.pedalboard.modify_audio_stream(self.input_device.get(), self.output_device.get()):
             self.failed_label.grid_forget()
         else:
             self.failed_label.grid(row=2, column=0, columnspan=2)

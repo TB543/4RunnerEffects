@@ -1,7 +1,8 @@
 from tkinter import EventType, Event
 from uuid import uuid4
+from datetime import datetime
 from customtkinter import CTkCanvas
-from pedalboard.io import AudioStream
+from pedalboard.io import AudioStream, AudioFile
 from pedalboard import Pedalboard
 from UI.Settings import Settings
 from UI.Files import Files
@@ -44,25 +45,33 @@ class PedalboardUI(CTkCanvas):
         self.create_text(0, 0, text="4Runner FX", font=("Comic Sans MS", 25, "bold"), fill="white", tags=self._title_tag)
 
         # creates the add pedals menu
-        self._audio = None
+        self._audio_stream = None
+        self._audio_input = None
         self.pedals = []
         self._pedals_height = (0, 0)
         self._add_pedals_menu = BasePedal(self, self._content_tag)
         self._add_pedals_width = 0
 
         # creates settings button
-        settings = Settings(self, self._audio, fg_color="#2b2b2b", bg_color="#252525", border_color="black", border_width=2, corner_radius=10)
+        settings = Settings(self, self._audio_stream, fg_color="#2b2b2b", bg_color="#252525", border_color="black", border_width=2, corner_radius=10)
         self._settings_tag = "settings"
         self.create_rounded_rectangle((-25, -25, 25, 25), 5, fill="#1F6AA5", width=3, tags=self._settings_tag)
-        self.create_text(1, -1, text="⚙", font=("Comic Sans MS", 25, "bold"), tags=self._settings_tag)
-        self.add_button_binding(self._settings_tag, lambda: settings.place(relx=.5, rely=.5, relwidth=.8, relheight=.9, anchor="center"))
+        self.create_text(0, 0, text="⚙", font=("Comic Sans MS", 25, "bold"), tags=self._settings_tag)
+        self.add_button_binding(self._settings_tag, lambda: [settings.place(relx=.5, rely=.5, relwidth=.8, relheight=.9, anchor="center"), file.place_forget()])
 
         # creates the file button
         file = Files(self, fg_color="#2b2b2b", bg_color="#252525", border_color="black", border_width=2, corner_radius=10)
         self._files_tag = "files"
         self.create_rounded_rectangle((-100, -25, -50, 25), 5, fill="#1F6AA5", width=3, tags=self._files_tag)
-        self.create_text(-75, -1, text="📂", font=("Comic Sans MS", 25, "bold"), tags=self._files_tag)
-        self.add_button_binding(self._files_tag, lambda: file.place(relx=.5, rely=.5, relwidth=.8, relheight=.9, anchor="center"))
+        self.create_text(-75, 0, text="📂", font=("Comic Sans MS", 25, "bold"), tags=self._files_tag)
+        self.add_button_binding(self._files_tag, lambda: [file.place(relx=.5, rely=.5, relwidth=.8, relheight=.9, anchor="center"), settings.place_forget()])
+
+        # creates record button
+        self._recording_audio_file = None
+        self._record_tag = "record"
+        self.create_rounded_rectangle((-175, -25, -125, 25), 5, fill="#1F6AA5", width=3, tags=self._record_tag)
+        self._record_icon = self.create_text(-150, 0, text="◉", font=("Comic Sans MS", 25, "bold"), tags=self._record_tag)
+        self.add_button_binding(self._record_tag, self._record_animation)
 
     def modify_audio_stream(self, input_device, output_device):
         """
@@ -75,19 +84,20 @@ class PedalboardUI(CTkCanvas):
         """
 
         # closes old stream
-        if self._audio:
-            self._audio.close()
+        if self._audio_stream:
+            self._audio_stream.close()
 
         # attempts to create new stream
         try:
             plugins = Pedalboard([pedal.effect for pedal in self.pedals])
-            self._audio = AudioStream(input_device_name=input_device, output_device_name=output_device, plugins=plugins)
-            self._audio.__enter__()
+            self._audio_input = input_device
+            self._audio_stream = AudioStream(input_device_name=input_device, output_device_name=output_device, plugins=plugins)
+            self._audio_stream.__enter__()
             return True
 
         # returns false on failure
         except ValueError:
-            self._audio = None
+            self._audio_stream = None
             return False
 
     def add_pedal(self, name, **kwargs):
@@ -163,8 +173,8 @@ class PedalboardUI(CTkCanvas):
         x = self._content_width - self.CONTENT_PADDING - self._scroll_x - self._add_pedals_width
         width = pedal.draw(x, *self._pedals_height)
         self.pedals.append(pedal)
-        if self._audio:
-            self._audio.plugins.append(pedal.effect)
+        if self._audio_stream:
+            self._audio_stream.plugins.append(pedal.effect)
 
         # adjust remaining content
         self.move(self._add_pedals_menu.id, width, 0)
@@ -182,8 +192,8 @@ class PedalboardUI(CTkCanvas):
         # removes pedal
         index = self.pedals.index(pedal)
         self.pedals.remove(pedal)
-        if self._audio:
-            self._audio.plugins.remove(pedal.effect)
+        if self._audio_stream:
+            self._audio_stream.plugins.remove(pedal.effect)
 
         # shifts remaining pedals over
         dx = -pedal.destroy()
@@ -275,8 +285,26 @@ class PedalboardUI(CTkCanvas):
         """
 
         super().destroy()
-        if self._audio:
-            self._audio.close()
+        if self._audio_stream:
+            self._audio_stream.close()
+
+    def _record_animation(self, update_state=True):
+        """
+        toggles the recording animation on/off
+
+        :param update_state: only used from within the function to play the animation
+        """
+
+        # handles a state update todo actually write audio from stream to recording file
+        if update_state and self._audio_stream:
+            self._recording_audio_file = self._recording_audio_file.close() if self._recording_audio_file else AudioFile(datetime.now().strftime("AppData/recording_%Y%m%d_%H%M%S.mp3"), "w", samplerate=44100, num_channels=2)
+            self.itemconfig(self._record_icon, text="◉")
+
+        # record animation
+        if self._recording_audio_file:
+            frame = "○" if self.itemcget(self._record_icon, "text") == "◉" else "◉"
+            self.itemconfig(self._record_icon, text=frame)
+            self.after(800, lambda: self._record_animation(update_state=False))
 
     def _set_scroll(self, relx):
         """
@@ -387,4 +415,5 @@ class PedalboardUI(CTkCanvas):
         self.move(self._title_tag, dx * .5, dy * .07)
         self.move(self._settings_tag, dx * .95, dy * .08)
         self.move(self._files_tag, dx * .95, dy * .08)
+        self.move(self._record_tag, dx * .95, dy * .08)
         self._draw_scrollbar()
