@@ -68,6 +68,8 @@ Install dependencies:
 ```
 pip install -r requirements.txt
 ```
+saved pedalboards are located at AppData/pedalboards.json. Additionally default audio in/out and pedalboard name on load can be passed as system arguments in that order
+
 ---
 
 ## Running the Application

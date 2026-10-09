@@ -1,6 +1,7 @@
 from tkinter import EventType, Event
 from uuid import uuid4
 from datetime import datetime
+from sys import argv
 from customtkinter import CTkCanvas
 from pedalboard.io import AudioStream, AudioFile
 from pedalboard import Pedalboard

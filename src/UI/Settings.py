@@ -1,3 +1,4 @@
+from sys import argv
 from customtkinter import CTkFrame, CTkButton, CTkLabel, CTkOptionMenu, StringVar
 from pedalboard.io import AudioStream
 
@@ -30,14 +31,14 @@ class Settings(CTkFrame):
         CTkButton(self, text="X", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", width=50, height=50, command=self.place_forget).grid(row=0, column=1, sticky="ne", padx=20, pady=20)
 
         # audio input selection
-        self.input_device = StringVar(self, "Select input device...")
+        self.input_device = StringVar(self, "Select input device..." if len(argv) < 2 else argv[1])
         CTkLabel(self, text="Audio In:", font=("Comic Sans MS", 20)).grid(row=1, column=0, sticky="s")
         self.inputs = CTkOptionMenu(self, variable=self.input_device, font=("Comic Sans MS", 15), command=self.set_audio_in)
         self.inputs.bind("<Enter>", lambda e: self.update_audio_devices())
         self.inputs.grid(row=2, column=0, sticky="n")
 
         # audio output selection
-        self.output_device = StringVar(self, "Select output device...")
+        self.output_device = StringVar(self, "Select output device..." if len(argv) < 3 else argv[2])
         CTkLabel(self, text="Audio Out:", font=("Comic Sans MS", 20)).grid(row=1, column=1, sticky="s")
         self.outputs = CTkOptionMenu(self, variable=self.output_device, font=("Comic Sans MS", 15), command=self.set_audio_out)
         self.outputs.bind("<Enter>", lambda e: self.update_audio_devices())
@@ -46,6 +47,10 @@ class Settings(CTkFrame):
         # error label and exit button
         self.failed_label = CTkLabel(self, text="Selected Input and Output Devices are not Compatible", font=("Comic Sans MS", 15), text_color="red")
         CTkButton(self, text="Exit Program", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", height=50, command=self.winfo_toplevel().destroy).grid(row=3, column=0, columnspan=2, padx=20, pady=20)
+
+        # parses sys default file audio io to use
+        if len(argv) > 1 and (not self.pedalboard.modify_audio_stream(self.input_device.get(), self.output_device.get())):
+            self.failed_label.grid(row=2, column=0, columnspan=2)
 
     def update_audio_devices(self):
         """

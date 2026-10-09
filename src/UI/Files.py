@@ -1,3 +1,4 @@
+from sys import argv
 from customtkinter import CTkFrame, CTkButton, CTkLabel, CTkScrollableFrame, StringVar, CTkEntry
 from json import load, dump
 from UI.Widgets import VirtualKeyboard
@@ -41,6 +42,11 @@ class Files(CTkFrame):
         CTkLabel(self.popup, font=("Comic Sans MS", 25, "bold"), textvariable=self.message).grid(row=0, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
         CTkButton(self.popup, font=("Comic Sans MS", 20, "bold"), border_width=2, border_color="black", text="confirm", command=lambda: [self.popup_command(), self.popup.place_forget()]).grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
         CTkButton(self.popup, font=("Comic Sans MS", 20, "bold"), border_width=2, border_color="black", text="cancel", command=self.popup.place_forget).grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
+
+        # parses sys default file to load
+        if len(argv) > 3:
+            with open("AppData/pedalboards.json", "r") as f:
+                self.load(load(f)[argv[3]])
 
     def show_popup(self, message, command):
         """
