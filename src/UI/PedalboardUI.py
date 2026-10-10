@@ -2,6 +2,7 @@ from tkinter import EventType, Event
 from uuid import uuid4
 from datetime import datetime
 from sys import argv
+from threading import Thread
 from customtkinter import CTkCanvas
 from pedalboard.io import AudioStream, AudioFile
 from pedalboard import Pedalboard
@@ -45,16 +46,23 @@ class PedalboardUI(CTkCanvas):
         self.create_text(5, 5, text="4Runner FX", font=("Comic Sans MS", 25, "bold"), tags=self._title_tag)
         self.create_text(0, 0, text="4Runner FX", font=("Comic Sans MS", 25, "bold"), fill="white", tags=self._title_tag)
 
+        # audio thread settings
+        self._audio_in = None
+        self._audio_out = None
+        self._plugins = Pedalboard()
+        self._recording_audio_file = None
+        self._audio_streaming = False
+        self._audio_thread = Thread(target=self._audio_job, daemon=True)
+        self._audio_thread.start()
+        
         # creates the add pedals menu
-        self._audio_stream = None
-        self._audio_input = None
         self.pedals = []
         self._pedals_height = (0, 0)
         self._add_pedals_menu = BasePedal(self, self._content_tag)
         self._add_pedals_width = 0
 
         # creates settings button
-        settings = Settings(self, self._audio_stream, fg_color="#2b2b2b", bg_color="#252525", border_color="black", border_width=2, corner_radius=10)
+        settings = Settings(self, fg_color="#2b2b2b", bg_color="#252525", border_color="black", border_width=2, corner_radius=10)
         self._settings_tag = "settings"
         self.create_rounded_rectangle((-25, -25, 25, 25), 5, fill="#1F6AA5", width=3, tags=self._settings_tag)
         self.create_text(0, 0, text="⚙", font=("Comic Sans MS", 25, "bold"), tags=self._settings_tag)
@@ -68,13 +76,31 @@ class PedalboardUI(CTkCanvas):
         self.add_button_binding(self._files_tag, lambda: [file.place(relx=.5, rely=.5, relwidth=.8, relheight=.9, anchor="center"), settings.place_forget()])
 
         # creates record button
-        self._recording_audio_file = None
         self._record_tag = "record"
         self.create_rounded_rectangle((-175, -25, -125, 25), 5, fill="#1F6AA5", width=3, tags=self._record_tag)
         self._record_icon = self.create_text(-150, 0, text="◉", font=("Comic Sans MS", 25, "bold"), tags=self._record_tag)
         self.add_button_binding(self._record_tag, self._record_animation)
 
-    def modify_audio_stream(self, input_device, output_device):
+    def _audio_job(self):
+        """
+        runs audio processing in a separate thread
+        """
+
+        # exits if audio stream is not initialized
+        if not (self._audio_in and self._audio_out):
+            return
+
+        # audio processing loop
+        with self._audio_in, self._audio_out:
+            while self._audio_streaming:
+                audio = self._plugins(self._audio_in.read(), self._audio_in.sample_rate, reset=False)
+                self._audio_out.write(audio, self._audio_out.sample_rate)
+
+                # handles writing to save file
+                if self._recording_audio_file:
+                    self._recording_audio_file.write(audio)
+
+    def modify_audio_stream(self, input_device=None, output_device=None):
         """
         changes the input and output device of the audio stream
 
@@ -85,21 +111,30 @@ class PedalboardUI(CTkCanvas):
         """
 
         # closes old stream
-        if self._audio_stream:
-            self._audio_stream.close()
+        self._audio_streaming = False
+        self._audio_thread.join()
+        if input_device and self._audio_in:
+            self._audio_in.close()
+            self._audio_in = None
+        if output_device and self._audio_out:
+            self._audio_out.close()
+            self._audio_out = None
 
         # attempts to create new stream
         try:
-            plugins = Pedalboard([pedal.effect for pedal in self.pedals])
-            self._audio_input = input_device
-            self._audio_stream = AudioStream(input_device_name=input_device, output_device_name=output_device, plugins=plugins)
-            self._audio_stream.__enter__()
-            return True
-
-        # returns false on failure
+            if input_device:
+                self._audio_in = AudioStream(input_device_name=input_device)
+                self._audio_in.ignore_dropped_input = True
+            if output_device:
+                self._audio_out = AudioStream(output_device_name=output_device)
         except ValueError:
-            self._audio_stream = None
             return False
+
+        # restarts audio thread
+        self._audio_streaming = True
+        self._audio_thread = Thread(target=self._audio_job, daemon=True)
+        self._audio_thread.start()
+        return True
 
     def add_pedal(self, name, **kwargs):
         """
@@ -174,8 +209,7 @@ class PedalboardUI(CTkCanvas):
         x = self._content_width - self.CONTENT_PADDING - self._scroll_x - self._add_pedals_width
         width = pedal.draw(x, *self._pedals_height)
         self.pedals.append(pedal)
-        if self._audio_stream:
-            self._audio_stream.plugins.append(pedal.effect)
+        self._plugins.append(pedal.effect)
 
         # adjust remaining content
         self.move(self._add_pedals_menu.id, width, 0)
@@ -193,8 +227,7 @@ class PedalboardUI(CTkCanvas):
         # removes pedal
         index = self.pedals.index(pedal)
         self.pedals.remove(pedal)
-        if self._audio_stream:
-            self._audio_stream.plugins.remove(pedal.effect)
+        self._plugins.remove(pedal.effect)
 
         # shifts remaining pedals over
         dx = -pedal.destroy()
@@ -286,8 +319,12 @@ class PedalboardUI(CTkCanvas):
         """
 
         super().destroy()
-        if self._audio_stream:
-            self._audio_stream.close()
+        self._audio_streaming = False
+        self._audio_thread.join()
+        if self._audio_in:
+            self._audio_in.close()
+        if self._audio_out:
+            self._audio_out.close()
 
     def _record_animation(self, update_state=True):
         """
@@ -296,10 +333,15 @@ class PedalboardUI(CTkCanvas):
         :param update_state: only used from within the function to play the animation
         """
 
-        # handles a state update todo actually write audio from stream to recording file
-        if update_state and self._audio_stream:
-            self._recording_audio_file = self._recording_audio_file.close() if self._recording_audio_file else AudioFile(datetime.now().strftime("AppData/recording_%Y%m%d_%H%M%S.mp3"), "w", samplerate=44100, num_channels=2)
+        # handles a state update
+        if update_state and self._audio_in:
+            self._audio_streaming = False
+            self._audio_thread.join()
+            self._recording_audio_file = self._recording_audio_file.close() if self._recording_audio_file else AudioFile(datetime.now().strftime("AppData/recording_%Y-%m-%d_%H:%M:%S%p.mp3"), "w", self._audio_in.sample_rate, self._audio_in.num_input_channels)
             self.itemconfig(self._record_icon, text="◉")
+            self._audio_streaming = True
+            self._audio_thread = Thread(target=self._audio_job, daemon=True)
+            self._audio_thread.start()
 
         # record animation
         if self._recording_audio_file:
