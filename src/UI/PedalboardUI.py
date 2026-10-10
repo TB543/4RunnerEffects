@@ -93,7 +93,7 @@ class PedalboardUI(CTkCanvas):
         # audio processing loop
         with self._audio_in, self._audio_out:
             while self._audio_streaming:
-                audio = self._plugins(self._audio_in.read(), self._audio_in.sample_rate)
+                audio = self._plugins(self._audio_in.read(), self._audio_in.sample_rate, reset=False)
                 self._audio_out.write(audio, self._audio_out.sample_rate)
 
                 # handles writing to save file
