@@ -325,6 +325,8 @@ class PedalboardUI(CTkCanvas):
             self._audio_in.close()
         if self._audio_out:
             self._audio_out.close()
+        if self._recording_audio_file:
+            self._recording_audio_file.close()
 
     def _record_animation(self, update_state=True):
         """
