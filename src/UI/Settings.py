@@ -8,7 +8,7 @@ class Settings(CTkFrame):
     a class for the settings menu of the program
     """
 
-    def __init__(self, parent, audio, **kwargs):
+    def __init__(self, parent, **kwargs):
         """
         creates the settings menu
 
@@ -20,7 +20,6 @@ class Settings(CTkFrame):
         # initializes class and configures grid
         super().__init__(parent, **kwargs)
         self.pedalboard = parent
-        self.audio = audio
         self.rowconfigure(1, weight=1)
         self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1)
@@ -45,7 +44,7 @@ class Settings(CTkFrame):
         self.outputs.grid(row=2, column=1, sticky="n")
 
         # error label and exit button
-        self.failed_label = CTkLabel(self, text="Selected Input and Output Devices are not Compatible", font=("Comic Sans MS", 15), text_color="red")
+        self.failed_label = CTkLabel(self, text="One of your selected devices is not working properly...", font=("Comic Sans MS", 15), text_color="red")
         CTkButton(self, text="Exit Program", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", height=50, command=self.winfo_toplevel().destroy).grid(row=3, column=0, columnspan=2, padx=20, pady=20)
 
         # parses sys default file audio io to use
@@ -65,7 +64,7 @@ class Settings(CTkFrame):
         sets the audio input device
         """
 
-        if self.pedalboard.modify_audio_stream(self.input_device.get(), self.output_device.get()):
+        if self.pedalboard.modify_audio_stream(input_device=self.input_device.get()):
             self.failed_label.grid_forget()
         else:
             self.failed_label.grid(row=2, column=0, columnspan=2)
@@ -75,7 +74,7 @@ class Settings(CTkFrame):
         sets the audio output device
         """
 
-        if self.pedalboard.modify_audio_stream(self.input_device.get(), self.output_device.get()):
+        if self.pedalboard.modify_audio_stream(output_device=self.output_device.get()):
             self.failed_label.grid_forget()
         else:
             self.failed_label.grid(row=2, column=0, columnspan=2)
