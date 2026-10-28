@@ -1,6 +1,7 @@
 from sys import argv
 from customtkinter import CTkFrame, CTkButton, CTkLabel, CTkOptionMenu, StringVar
 from pedalboard.io import AudioStream
+from Controller import *
 
 
 class Settings(CTkFrame):
@@ -27,7 +28,8 @@ class Settings(CTkFrame):
 
         # title, close button
         CTkLabel(self, text="Settings", font=("Comic Sans MS", 30, "bold")).grid(row=0, column=0, columnspan=2)
-        CTkButton(self, text="X", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", width=50, height=50, command=self.place_forget).grid(row=0, column=1, sticky="ne", padx=20, pady=20)
+        x_button = CTkButton(self, text="X", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", width=50, height=50, command=self.place_forget)
+        x_button.grid(row=0, column=1, sticky="ne", padx=20, pady=20)
 
         # audio input selection
         self.input_device = StringVar(self, "Select input device..." if len(argv) < 2 else argv[1])
@@ -45,11 +47,17 @@ class Settings(CTkFrame):
 
         # error label and exit button
         self.failed_label = CTkLabel(self, text="One of your selected devices is not working properly...", font=("Comic Sans MS", 15), text_color="red")
-        CTkButton(self, text="Exit Program", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", height=50, command=self.winfo_toplevel().destroy).grid(row=3, column=0, columnspan=2, padx=20, pady=20)
+        shutdown_button = CTkButton(self, text="Exit Program", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", height=50, command=self.winfo_toplevel().destroy)
+        shutdown_button.grid(row=3, column=0, columnspan=2, padx=20, pady=20)
 
         # parses sys default file audio io to use
         if len(argv) > 1 and (not self.pedalboard.modify_audio_stream(self.input_device.get(), self.output_device.get())):
             self.failed_label.grid(row=2, column=0, columnspan=2)
+
+        # adds the controller to the menu
+        shutdown_interactable = Interactable(shutdown_button)
+        x_interactable = Interactable(x_button, down=shutdown_interactable, focus_after="main")
+        INTERACTABLES.add_group("settings", x_interactable)
 
     def update_audio_devices(self):
         """

@@ -1,4 +1,5 @@
 from customtkinter import CTkFrame, CTkButton
+from Controller import *
 
 
 class VirtualKeyboard(CTkFrame):
@@ -68,22 +69,35 @@ class VirtualKeyboard(CTkFrame):
 
         # creates a frame to contain each row
         self.columnconfigure(0, weight=1)
+        prev_row = [None] * 60
         for row, keys in enumerate(VirtualKeyboard.KEYS):
             self.rowconfigure(row, weight=1)
 
             # creates buttons
             column = 0
+            interactable = None
             for key in keys:
                 command = VirtualKeyboard.COMMANDS[key](self) if key in VirtualKeyboard.COMMANDS else lambda k=key: self.key(k)
-                button = CTkButton(self, text=key[0], font=("Arial", 20), command=command)
+                button = CTkButton(self, text=key[0], font=("Arial", 20), border_width=2, border_color="black", command=command)
                 button.metadata = key
                 columns = VirtualKeyboard.COLUMNS[key] if key in VirtualKeyboard.COLUMNS else 4
                 button.grid(row=row, column=column, columnspan=columns, sticky="nsew", padx=3, pady=3)
                 column += columns
 
+                # adds controller support
+                interactable = Interactable(button, left=interactable, up=prev_row[column - columns], focus_after="files" if key[0] == "Enter" or key[0] == "✖" else None)
+                if key[0] == "Space":
+                    for elem in prev_row[column - columns:column]:
+                        elem.down = interactable
+
+                for i in range(columns):
+                    prev_row[column - 1 - i] = interactable
+
                 # handles when the button is a spacer
                 if key[0] == ' ':
                     button.configure(state="disabled")
+
+        INTERACTABLES.add_group("keyboard", interactable)
 
     def key(self, key):
         """

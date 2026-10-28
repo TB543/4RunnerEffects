@@ -2,6 +2,7 @@ from sys import argv
 from customtkinter import CTkFrame, CTkButton, CTkLabel, CTkScrollableFrame, StringVar, CTkEntry
 from json import load, dump
 from UI.Widgets import VirtualKeyboard
+from Controller import *
 
 
 class Files(CTkFrame):
@@ -25,7 +26,10 @@ class Files(CTkFrame):
 
         # title, close button and body
         CTkLabel(self, text="Saved Pedalboards", font=("Comic Sans MS", 30, "bold")).grid(row=0, column=0, columnspan=2)
-        CTkButton(self, text="X", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", width=50, height=50, command=self.place_forget).grid(row=0, column=0, sticky="ne", padx=20, pady=20)
+        x_button = CTkButton(self, text="X", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", width=50, height=50, command=self.place_forget)
+        x_button.grid(row=0, column=0, sticky="ne", padx=20, pady=20)
+        self.x_interactable = Interactable(x_button)
+        INTERACTABLES.add_group("files", self.x_interactable)
         self.body = CTkScrollableFrame(self)
         self.body.columnconfigure(0, weight=1)
         self.body.grid(row=1, column=0, sticky="nsew", padx=(3, 10), pady=3)
@@ -38,10 +42,17 @@ class Files(CTkFrame):
         self.popup.rowconfigure(0, weight=1)
         self.popup.columnconfigure(0, weight=1)
         self.popup.columnconfigure(1, weight=1)
-        self.message = StringVar(self, "testingtesting123")
+        self.message = StringVar(self)
         CTkLabel(self.popup, font=("Comic Sans MS", 25, "bold"), textvariable=self.message).grid(row=0, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
-        CTkButton(self.popup, font=("Comic Sans MS", 20, "bold"), border_width=2, border_color="black", text="confirm", command=lambda: [self.popup_command(), self.popup.place_forget()]).grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
-        CTkButton(self.popup, font=("Comic Sans MS", 20, "bold"), border_width=2, border_color="black", text="cancel", command=self.popup.place_forget).grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
+        confirm_button = CTkButton(self.popup, font=("Comic Sans MS", 20, "bold"), border_width=2, border_color="black", text="confirm", command=lambda: [self.popup_command(), self.popup.place_forget()])
+        cancel_button = CTkButton(self.popup, font=("Comic Sans MS", 20, "bold"), border_width=2, border_color="black", text="cancel", command=self.popup.place_forget)
+        confirm_button.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+        cancel_button.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
+
+        # adds controller support to popup
+        confirm_interactable = Interactable(confirm_button, focus_after="files")
+        Interactable(cancel_button, left=confirm_interactable, focus_after="files")
+        INTERACTABLES.add_group("popup", confirm_interactable)
 
         # parses sys default file to load
         if len(argv) > 3:
@@ -59,6 +70,7 @@ class Files(CTkFrame):
         self.popup_command = command
         self.message.set(message)
         self.popup.place(relx=.5, rely=.55, anchor="center", relwidth=.85, relheight=.8)
+        self.after(0, lambda: INTERACTABLES.set_active_group("popup"))
 
     def load(self, pedalboard: list[dict] = ()):
         """
@@ -138,12 +150,19 @@ class Files(CTkFrame):
 
         # creates the load and save options at the top
         name = StringVar(self.body)
-        CTkButton(self.body, text="Load Blank PedalBoard", font=("Comic Sans MS", 20), border_width=2, height=75, border_color="black", command=self.load).grid(row=0, column=0, columnspan=4, sticky="ew", padx=5)
+        blank_button = CTkButton(self.body, text="Load Blank PedalBoard", font=("Comic Sans MS", 20), border_width=2, height=75, border_color="black", command=self.load)
+        blank_button.grid(row=0, column=0, columnspan=4, sticky="ew", padx=5)
         entry = CTkEntry(self.body, placeholder_text="Enter Pedalboard Name...", textvariable=name, font=("Comic Sans MS", 20), height=75)
         entry.grid(row=1, column=0, columnspan=3, sticky="ew", padx=5, pady=(5, 0))
         if self.keyboard is not None: self.keyboard.destroy()
-        self.keyboard = VirtualKeyboard(self.winfo_toplevel(), entry, lambda n=name: self.save(n.get()))
-        CTkButton(self.body, text="💾", font=("Comic Sans MS", 20), border_width=2, width=75, height=75, border_color="black", command=lambda n=name: self.save(n.get(), True)).grid(row=1, column=3, padx=5, pady=(5, 0))
+        self.keyboard = VirtualKeyboard(self.winfo_toplevel(), entry, lambda n=name: self.save(n.get(), True))
+        save_button = CTkButton(self.body, text="💾", font=("Comic Sans MS", 20), border_width=2, width=75, height=75, border_color="black", command=lambda n=name: self.save(n.get(), True))
+        save_button.grid(row=1, column=3, padx=5, pady=(5, 0))
+
+        # adds controller support for widgets
+        blank_interactable = Interactable(blank_button, up=self.x_interactable, focus_after="main")
+        save_interactable = Interactable(save_button, up=blank_interactable)
+        entry_interactable = Interactable(entry, up=blank_interactable, right=save_interactable, focus_after="keyboard")
 
         # reads current save file to memory
         try:
@@ -153,11 +172,24 @@ class Files(CTkFrame):
             pedalboards = {}
 
         # draws saved pedals to screen
+        col1 = col2 = entry_interactable
+        col3 = save_interactable
         for i, (name, data) in enumerate(pedalboards.items()):
             CTkLabel(self.body, text=name, font=("Comic Sans MS", 20)).grid(row=i + 2, column=0, sticky="w", padx=(25, 0), pady=(5, 0))
-            CTkButton(self.body, text="📥", font=("Comic Sans MS", 20), border_width=2, width=75, height=75, border_color="black", command=lambda d=data: self.load(d)).grid(row=i + 2, column=1, padx=5, pady=(5, 0))
-            CTkButton(self.body, text="💾", font=("Comic Sans MS", 20), border_width=2, width=75, height=75, border_color="black", command=lambda n=name: self.show_popup(f"Overwrite\n\"{n}\"\nSave Data?", lambda: self.save(n))).grid(row=i + 2, column=2, padx=5, pady=(5, 0))
-            CTkButton(self.body, text="🗑️", font=("Comic Sans MS", 20), border_width=2, width=75, height=75, border_color="black", command=lambda n=name: self.show_popup(f"Delete\n\"{n}\"\nSave Data?", lambda: self.delete(n))).grid(row=i + 2, column=3, padx=5, pady=(5, 0))
+            load_button = CTkButton(self.body, text="📥", font=("Comic Sans MS", 20), border_width=2, width=75, height=75, border_color="black", command=lambda d=data: self.load(d))
+            save_button = CTkButton(self.body, text="💾", font=("Comic Sans MS", 20), border_width=2, width=75, height=75, border_color="black", command=lambda n=name: self.show_popup(f"Overwrite\n\"{n}\"\nSave Data?", lambda: self.save(n)))
+            delete_button = CTkButton(self.body, text="🗑️", font=("Comic Sans MS", 20), border_width=2, width=75, height=75, border_color="black", command=lambda n=name: self.show_popup(f"Delete\n\"{n}\"\nSave Data?", lambda: self.delete(n)))
+            load_button.grid(row=i + 2, column=1, padx=5, pady=(5, 0))
+            save_button.grid(row=i + 2, column=2, padx=5, pady=(5, 0))
+            delete_button.grid(row=i + 2, column=3, padx=5, pady=(5, 0))
+
+            # adds controller support for buttons
+            col2 = Interactable(save_button, up=col2)
+            col1 = Interactable(load_button, up=col1, right=col2, focus_after="main")
+            col3 = Interactable(delete_button, up=col3, left=col2)
+
+        # updates controller interactables
+        INTERACTABLES.set_active_group("files")
 
     def place_forget(self):
         """
