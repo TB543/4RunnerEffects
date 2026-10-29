@@ -19,6 +19,12 @@ class InteractionManager:
         processes a given input to the program
         """
 
+        # turns on controller on first input
+        if not InteractionManager._singleton._input_received:
+            InteractionManager._singleton._input_received = True
+            InteractionManager._singleton.set_active_group("main")
+            return "OK"
+
         # mouse movement args for given input
         kwargs = {
             "up": {"y": -10},
@@ -53,6 +59,7 @@ class InteractionManager:
 
         # starts server and sets fields
         InteractionManager._singleton = self
+        self._input_received = False
         self._groups = {}
         self._focus = None
         Thread(target=InteractionManager._server.run, daemon=True).start()
@@ -74,6 +81,11 @@ class InteractionManager:
         :param group: the group to activate
         """
 
+        # do nothing until controller is used
+        if not self._input_received:
+            return
+
+        # set active group logic
         if self._focus:
             self._focus.unfocus()
         self._focus = self._groups[group]

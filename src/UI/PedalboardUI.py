@@ -89,7 +89,6 @@ class PedalboardUI(CTkCanvas):
         Interactable(self._settings_tag, left=files_interactable, down="pedals", focus_after="settings")
         INTERACTABLES.add_group("main", record_interactable)
         INTERACTABLES.add_group("scrollbar", Interactable(self._scrollbar_tag, up="pedals", select_hold_focus=True))
-        INTERACTABLES.set_active_group("main")
 
     def _audio_job(self):
         """
