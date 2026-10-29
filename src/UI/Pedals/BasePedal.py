@@ -1,6 +1,7 @@
 from uuid import uuid4
 from customtkinter import CTkCanvas
 from Controller import *
+from UI.Widgets import Knob
 
 
 class BasePedal:
@@ -11,6 +12,7 @@ class BasePedal:
     DRAW_KWARGS = {"fill": "gray", "width": 4, "radius": 20, "padx": 1, "aspect": 2 / 3}
     MIN_MAX_VALUES = {}  # {effect: (min, max)}
     EFFECT = None
+    _interactables = []  # used for controller support
 
     def __init__(self, canvas: CTkCanvas, tags):
         """
@@ -112,6 +114,11 @@ class BasePedal:
             tag = self.canvas.create_rounded_rectangle(delete_bbox, 5, fill="#1F6AA5", width=3, tags=self.tags)
             self.canvas.create_text(delete_pos, text="🗑", font=("Comic Sans MS", 20), tags=self.tags + (tag,))
             self.canvas.add_button_binding(tag, lambda: self.canvas.delete_pedal(self))
+
+            # adds controller support for button
+            delete_interactable = Interactable(tag, left=BasePedal._interactables[0].left, right=BasePedal._interactables[-1], focus_after="main")
+            for interactable in BasePedal._interactables:
+                interactable.left = delete_interactable
             return width
 
         # ========================= functionality only for this class - buttons to add pedals =========================
@@ -183,6 +190,8 @@ class BasePedal:
         x1 = self.rel_pos(.1)
         x2 = self.rel_pos(.9)
         prev_interactable = None
+        BasePedal._interactables.clear()
+        Knob._interactables.clear()
         for i, name in enumerate(button_texts):
             y = self.rel_pos(rely=(i + 1) / (len(button_texts) + 1.5))
             bbox = x1, y, x2, y + 50
@@ -197,6 +206,8 @@ class BasePedal:
             # adds controller support for buttons
             prev_interactable = Interactable(button, up=prev_interactable if prev_interactable else "main")
             if i == 0: INTERACTABLES.add_group("pedals", prev_interactable)
+            lst = Knob._interactables if i != 2 else BasePedal._interactables
+            lst.append(prev_interactable)
 
         # adds left page button
         x = self.rel_pos(.5)
@@ -206,6 +217,7 @@ class BasePedal:
         self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfig(t, text=rev_text_map[self.canvas.itemcget(t, "text")]) for t in button_to_text.values()])
         self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfigure(b, state="normal" if self.canvas.itemcget(button_to_text[b], "text").strip() else "hidden") for b in button_to_text.keys()], add="+")
         left_interactable = Interactable(button, up=prev_interactable)
+        BasePedal._interactables.append(left_interactable)
 
         # adds right page button
         button = self.canvas.create_rounded_rectangle((x + 25, y - 70, x + 75, y - 20), 10, fill="light blue", tags=self.tags)

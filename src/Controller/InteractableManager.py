@@ -19,9 +19,24 @@ class InteractionManager:
         processes a given input to the program
         """
 
+        # mouse movement args for given input
+        kwargs = {
+            "up": {"y": -10},
+            "down": {"y": 10},
+            "left": {"x": -10},
+            "right": {"x": 10}
+        }
+
+        # processes request
         data = request.get_json()
         if data["input"] == "select":
             InteractionManager.CANVAS.after(0, InteractionManager._singleton._focus.select)
+        elif InteractionManager._singleton._focus.focused_pos:
+            InteractionManager._singleton._focus.focused_pos["x"] += kwargs[data["input"]].get("x", 0)
+            InteractionManager._singleton._focus.focused_pos["y"] += kwargs[data["input"]].get("y", 0)
+            InteractionManager.CANVAS.event_generate("<B1-Motion>", **InteractionManager._singleton._focus.focused_pos)
+            InteractionManager.CANVAS.delete("pointer")
+            InteractionManager.CANVAS.create_aa_circle(*InteractionManager._singleton._focus.focused_pos.values(), 5, fill="red", tags="pointer")
         else:
             InteractionManager.CANVAS.after(0, lambda: InteractionManager._singleton.change_focus(data["input"]))
 
@@ -77,7 +92,7 @@ class InteractionManager:
             elem = self._dynamic_focus(elem) if type(elem) == str else elem
 
             # skips element if it is hidden
-            while type(elem.reference) == str and InteractionManager.CANVAS.itemcget(elem.reference, "state") == "hidden":
+            while type(elem.reference) == str and (InteractionManager.CANVAS.itemcget(elem.reference, "state") == "hidden" or InteractionManager.CANVAS.bbox(elem.reference) is None ):
                 elem = getattr(elem, direction)
             self._focus = elem
             self._focus.focus()
@@ -100,7 +115,7 @@ class InteractionManager:
         stack = [self._groups[group]]
         while stack:
             node = stack.pop()
-            if node is None or node in nodes or type(node) == str: continue
+            if node is None or node in nodes or type(node) == str or InteractionManager.CANVAS.bbox(node.reference) is None: continue
 
             # calculates the distance to the currently focused element
             x1, y1, x2, y2 = InteractionManager.CANVAS.bbox(node.reference)

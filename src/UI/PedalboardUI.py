@@ -459,15 +459,17 @@ class PedalboardUI(CTkCanvas):
 
         # redraws pedals
         self._pedals_height = (self._height * PedalboardUI.CONTENT_HEIGHT_RELATIVE[0], self._height * PedalboardUI.CONTENT_HEIGHT_RELATIVE[1])
+        self._add_pedals_width = self._add_pedals_menu.draw(0, *self._pedals_height)
         x = PedalboardUI.CONTENT_PADDING
         for pedal in self.pedals:
             x += pedal.draw(x, *self._pedals_height)
+        self.move(self._add_pedals_menu.id, x, 0)
 
         # adjust drawn object positions
-        self._add_pedals_width = self._add_pedals_menu.draw(x, *self._pedals_height)
         self._content_width = x + self._add_pedals_width + PedalboardUI.CONTENT_PADDING
         self.move(self._title_tag, dx * .5, dy * .07)
         self.move(self._settings_tag, dx * .95, dy * .08)
         self.move(self._files_tag, dx * .95, dy * .08)
         self.move(self._record_tag, dx * .95, dy * .08)
         self._draw_scrollbar()
+        INTERACTABLES.set_active_group("main")

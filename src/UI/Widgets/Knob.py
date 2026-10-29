@@ -2,6 +2,7 @@ from customtkinter import CTkCanvas
 from tkinter import EventType
 from uuid import uuid4
 from math import radians, sin, cos, atan2, pi
+from Controller import *
 
 
 class Knob:
@@ -11,6 +12,7 @@ class Knob:
 
     MIN_ANGLE = radians(230)
     MAX_ANGLE = radians(130)
+    _interactables = []  # used for controller support
 
     def __init__(self, canvas: CTkCanvas, pos, r, callback, tags, value=0):
         """
@@ -39,6 +41,11 @@ class Knob:
         self._center_id = self.draw(pos)
         self.canvas.tag_bind(self._id, "<Button-1>", self._rotate)
         self.canvas.tag_bind(self._id, "<B1-Motion>", self._rotate)
+
+        # adds controller support
+        knob_interactable = Interactable(self._id, left=Knob._interactables[0].left, right=Knob._interactables[0], up="main", down=Knob._interactables[-1].down.left, select_hold_focus=True)
+        for interactable in Knob._interactables:
+            interactable.left = knob_interactable
 
     def draw(self, pos):
         """
