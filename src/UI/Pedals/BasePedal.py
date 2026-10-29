@@ -116,7 +116,7 @@ class BasePedal:
             self.canvas.add_button_binding(tag, lambda: self.canvas.delete_pedal(self))
 
             # adds controller support for button
-            delete_interactable = Interactable(tag, left=BasePedal._interactables[0].left, right=BasePedal._interactables[-1], focus_after="main")
+            delete_interactable = Interactable(tag, left=BasePedal._interactables[0].left, right=BasePedal._interactables[-1], down="scrollbar", focus_after="main")
             for interactable in BasePedal._interactables:
                 interactable.left = delete_interactable
             return width
@@ -216,7 +216,7 @@ class BasePedal:
         self.canvas.create_text((x - 50, y - 45), text="←", font=("Comic Sans MS", 20, "italic"), tags=self.tags + (button,))
         self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfig(t, text=rev_text_map[self.canvas.itemcget(t, "text")]) for t in button_to_text.values()])
         self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfigure(b, state="normal" if self.canvas.itemcget(button_to_text[b], "text").strip() else "hidden") for b in button_to_text.keys()], add="+")
-        left_interactable = Interactable(button, up=prev_interactable)
+        left_interactable = Interactable(button, up=prev_interactable, down="scrollbar")
         BasePedal._interactables.append(left_interactable)
 
         # adds right page button
@@ -224,7 +224,7 @@ class BasePedal:
         self.canvas.create_text((x + 50, y - 45), text="→", font=("Comic Sans MS", 20, "italic"), tags=self.tags + (button,))
         self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfig(t, text=text_map[self.canvas.itemcget(t, "text")]) for t in button_to_text.values()])
         self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfigure(b, state="normal" if self.canvas.itemcget(button_to_text[b], "text").strip() else "hidden") for b in button_to_text.keys()], add="+")
-        Interactable(button, up=prev_interactable, left=left_interactable)
+        Interactable(button, up=prev_interactable, left=left_interactable, down="scrollbar")
 
         return width
 

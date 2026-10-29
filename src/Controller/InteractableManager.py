@@ -92,7 +92,7 @@ class InteractionManager:
             elem = self._dynamic_focus(elem) if type(elem) == str else elem
 
             # skips element if it is hidden
-            while type(elem.reference) == str and (InteractionManager.CANVAS.itemcget(elem.reference, "state") == "hidden" or InteractionManager.CANVAS.bbox(elem.reference) is None ):
+            while type(elem.reference) == str and (InteractionManager.CANVAS.itemcget(elem.reference, "state") == "hidden" or InteractionManager.CANVAS.bbox(elem.reference) is None):
                 elem = getattr(elem, direction)
             self._focus = elem
             self._focus.focus()
@@ -123,4 +123,4 @@ class InteractionManager:
             nodes[node] = hypot(x - focus_x, y - focus_y)
             stack.extend([node.up, node.down, node.left, node.right])
 
-        return min(nodes, key=nodes.get)
+        return min(nodes, key=nodes.get) if nodes else self._focus

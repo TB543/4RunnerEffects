@@ -60,6 +60,11 @@ class Interactable:
                 if Interactable.CANVAS.type(tag) == "line":
                     Interactable.CANVAS.itemconfigure(tag, fill="red")
 
+            x1, _, x2, _ = Interactable.CANVAS.bbox(self.reference)
+            x = (x1 + x2) // 2
+            if x < 0 or x > Interactable.CANVAS.width:
+                Interactable.CANVAS.set_scroll((Interactable.CANVAS.scroll_x + x) / (Interactable.CANVAS.content_width + 1))
+
     def unfocus(self):
         """
         removes the focus from this element
@@ -77,7 +82,7 @@ class Interactable:
                 if Interactable.CANVAS.type(tag) == "arc":
                     Interactable.CANVAS.itemconfigure(tag, outline="black")
                 if Interactable.CANVAS.type(tag) == "line":
-                    Interactable.CANVAS.itemconfigure(tag, fill="white" if self.select_hold_focus else "black")
+                    Interactable.CANVAS.itemconfigure(tag, fill="white" if self.select_hold_focus and self.reference != "scrollbar" else "black")
 
     def select(self):
         """
@@ -97,7 +102,7 @@ class Interactable:
             y = (y1 + y2) // 2
             Interactable.CANVAS.event_generate("<ButtonRelease-1>" if self.focused_pos else "<Button-1>", x=x, y=y)
             if self.select_hold_focus:
-                self.focused_pos = {} if self.focused_pos else {"x": x1, "y": y1}
+                self.focused_pos = {} if self.focused_pos else {"x": x if self.reference == "scrollbar" else x1, "y": y if self.reference == "scrollbar" else y1}
                 if self.focused_pos: Interactable.CANVAS.create_aa_circle(*self.focused_pos.values(), 5, fill="red", tags="pointer")
                 if not self.focused_pos: Interactable.CANVAS.delete("pointer")
             else:

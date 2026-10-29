@@ -28,12 +28,12 @@ class PedalboardUI(CTkCanvas):
         # initializes fields
         super(PedalboardUI, self).__init__(parent, background="#252525")
         self.bind("<Configure>", self._resize)
-        self._width = 1
+        self.width = 1
         self._height = 1
 
         # scrollbar settings
-        self._scroll_x = 0
-        self._content_width = 0
+        self.scroll_x = 0
+        self.content_width = 0
         self._scroll_event = 0
         self._scrollbar_tag = "scrollbar"
         self._content_tag = "content"
@@ -88,6 +88,7 @@ class PedalboardUI(CTkCanvas):
         files_interactable = Interactable(self._files_tag, left=record_interactable, down="pedals", focus_after="files")
         Interactable(self._settings_tag, left=files_interactable, down="pedals", focus_after="settings")
         INTERACTABLES.add_group("main", record_interactable)
+        INTERACTABLES.add_group("scrollbar", Interactable(self._scrollbar_tag, up="pedals", select_hold_focus=True))
         INTERACTABLES.set_active_group("main")
 
     def _audio_job(self):
@@ -215,16 +216,16 @@ class PedalboardUI(CTkCanvas):
             setattr(pedal.effect, key, value)
 
         # draw pedal and add effect to audio stream
-        x = self._content_width - self.CONTENT_PADDING - self._scroll_x - self._add_pedals_width
+        x = self.content_width - self.CONTENT_PADDING - self.scroll_x - self._add_pedals_width
         width = pedal.draw(x, *self._pedals_height)
         self.pedals.append(pedal)
         self._plugins.append(pedal.effect)
 
         # adjust remaining content
         self.move(self._add_pedals_menu.id, width, 0)
-        self._content_width += width
+        self.content_width += width
         self._draw_scrollbar()
-        self._set_scroll(1)
+        self.set_scroll(1)
 
     def delete_pedal(self, pedal):
         """
@@ -240,7 +241,7 @@ class PedalboardUI(CTkCanvas):
 
         # shifts remaining pedals over
         dx = -pedal.destroy()
-        self._content_width += dx
+        self.content_width += dx
         self._draw_scrollbar()
         self.move(self._add_pedals_menu.id, dx, 0)
         for pedal in self.pedals[index:]:
@@ -360,7 +361,7 @@ class PedalboardUI(CTkCanvas):
             self.itemconfig(self._record_icon, text=frame)
             self.after(800, lambda: self._record_animation(update_state=False))
 
-    def _set_scroll(self, relx):
+    def set_scroll(self, relx):
         """
         sets the scroll position
 
@@ -376,7 +377,7 @@ class PedalboardUI(CTkCanvas):
         self._scroll_event = bbox[0]
         scrollbar_width = bbox[2] - bbox[0]
         min_x = PedalboardUI.SCROLLBAR_PADDING / 2
-        max_x = self._width - (PedalboardUI.SCROLLBAR_PADDING / 2) - scrollbar_width
+        max_x = self.width - (PedalboardUI.SCROLLBAR_PADDING / 2) - scrollbar_width
 
         # creates simulated scroll event and triggers it
         event = Event()
@@ -401,19 +402,19 @@ class PedalboardUI(CTkCanvas):
             bbox = self.bbox(self._scrollbar_tag)
             scrollbar_width = bbox[2] - bbox[0]
             min_x = PedalboardUI.SCROLLBAR_PADDING / 2
-            max_x = self._width - (PedalboardUI.SCROLLBAR_PADDING / 2) - scrollbar_width
+            max_x = self.width - (PedalboardUI.SCROLLBAR_PADDING / 2) - scrollbar_width
             scrollbar_dx = max(min_x - bbox[0], min(scrollbar_dx, max_x + scrollbar_width - bbox[2]))
 
             # calculate content scroll amount
             scroll_percent = (bbox[0] + scrollbar_dx - min_x) / (max_x - min_x)
-            content_x = scroll_percent * (self._content_width - self._width)
-            content_dx = self._scroll_x - content_x
+            content_x = scroll_percent * (self.content_width - self.width)
+            content_dx = self.scroll_x - content_x
 
             # moves canvas objects
             self.move(self._scrollbar_tag, scrollbar_dx, 0)
             self.move(self._content_tag, content_dx, 0)
             self._scroll_event = event.x
-            self._scroll_x = content_x
+            self.scroll_x = content_x
 
     def _draw_scrollbar(self):
         """
@@ -422,11 +423,11 @@ class PedalboardUI(CTkCanvas):
 
         # redraw scrollbar
         self.delete(self._scrollbar_tag)
-        if self._content_width > self._width:
-            scroll_percent = self._scroll_x / (self._content_width - self._width)
-            scrollbar_width = ((self._width / self._content_width) * self._width) - PedalboardUI.SCROLLBAR_PADDING
+        if self.content_width > self.width:
+            scroll_percent = self.scroll_x / (self.content_width - self.width)
+            scrollbar_width = ((self.width / self.content_width) * self.width) - PedalboardUI.SCROLLBAR_PADDING
             scrollbar_width = max(scrollbar_width, 75)
-            scrollbar_x = scroll_percent * (self._width - scrollbar_width - PedalboardUI.SCROLLBAR_PADDING) + (PedalboardUI.SCROLLBAR_PADDING / 2)
+            scrollbar_x = scroll_percent * (self.width - scrollbar_width - PedalboardUI.SCROLLBAR_PADDING) + (PedalboardUI.SCROLLBAR_PADDING / 2)
             pos = scrollbar_x, self._height - 45, scrollbar_x + scrollbar_width, self._height - 25
             self.create_rounded_rectangle(pos, 7, fill="gray", tags=self._scrollbar_tag)
 
@@ -439,8 +440,8 @@ class PedalboardUI(CTkCanvas):
 
         # ensures all content is visible when scrollbar is hidden
         else:
-            self.move(self._content_tag, self._scroll_x, 0)
-            self._scroll_x = 0
+            self.move(self._content_tag, self.scroll_x, 0)
+            self.scroll_x = 0
 
     def _resize(self, event):
         """
@@ -450,12 +451,12 @@ class PedalboardUI(CTkCanvas):
         """
 
         # update canvas fields
-        dx = event.width - self._width
+        dx = event.width - self.width
         dy = event.height - self._height
-        self._width = event.width
+        self.width = event.width
         self._height = event.height
-        self._scroll_x = 0
-        self._content_width = 0
+        self.scroll_x = 0
+        self.content_width = 0
 
         # redraws pedals
         self._pedals_height = (self._height * PedalboardUI.CONTENT_HEIGHT_RELATIVE[0], self._height * PedalboardUI.CONTENT_HEIGHT_RELATIVE[1])
@@ -466,7 +467,7 @@ class PedalboardUI(CTkCanvas):
         self.move(self._add_pedals_menu.id, x, 0)
 
         # adjust drawn object positions
-        self._content_width = x + self._add_pedals_width + PedalboardUI.CONTENT_PADDING
+        self.content_width = x + self._add_pedals_width + PedalboardUI.CONTENT_PADDING
         self.move(self._title_tag, dx * .5, dy * .07)
         self.move(self._settings_tag, dx * .95, dy * .08)
         self.move(self._files_tag, dx * .95, dy * .08)
