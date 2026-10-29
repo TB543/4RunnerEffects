@@ -76,10 +76,15 @@ saved pedalboards are located at AppData/pedalboards.json. Additionally default 
 
 Run the main program:
 ```
-python src/main.py
+python src/main.py <audio-input> <audio-output> <loaded-pedalboard>
 ```
-Make sure your system audio input and output devices are properly configured.
+Make sure your system audio input and output devices are properly configured. Additional parameters are optional but are useful for automatically setting up the audio stream. 
 
+---
+
+## Additional Functionality
+
+Although this program was initially designed to be used in my car as a plugin to the 4RunnerDash project, I found it so useful I decided to add it to my entertainment center in my apartment. Running on a TV without a touch screen I needed to be able to control it with my TV remote. To do so this program now hosts a flask server on localhost port 5000. It takes post requests with a simple json body where the key is "input" and the value is either "up", "down", "left", "right" or "select" which aids in controlling the UI.
 
 ---
 
@@ -105,12 +110,5 @@ Additional license notes:
 - Enable **real‑time effects processing in Python**  
 - Create an extensible framework for building new pedals  
 - Run efficiently on small devices such as Raspberry Pi  
-
----
-
-## Future Improvements
-
-- Audio recording
-- Make UI more pretty
 
 ---
