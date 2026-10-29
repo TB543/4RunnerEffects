@@ -1,5 +1,6 @@
 from uuid import uuid4
 from customtkinter import CTkCanvas
+from Controller import *
 
 
 class BasePedal:
@@ -181,8 +182,9 @@ class BasePedal:
         button_texts = ["Chorus", "Distortion", "Phaser"]
         x1 = self.rel_pos(.1)
         x2 = self.rel_pos(.9)
-        for y, name in enumerate(button_texts):
-            y = self.rel_pos(rely=(y + 1) / (len(button_texts) + 1.5))
+        prev_interactable = None
+        for i, name in enumerate(button_texts):
+            y = self.rel_pos(rely=(i + 1) / (len(button_texts) + 1.5))
             bbox = x1, y, x2, y + 50
             text_pos = bbox[0] + (bbox[2] - bbox[0]) / 2, bbox[1] + (bbox[3] - bbox[1]) / 2
 
@@ -192,6 +194,10 @@ class BasePedal:
             button_to_text[button] = text
             self.canvas.add_button_binding(button, lambda t=text: self.canvas.add_pedal(self.canvas.itemcget(t, "text")))
 
+            # adds controller support for buttons
+            prev_interactable = Interactable(button, up=prev_interactable if prev_interactable else "main")
+            if i == 0: INTERACTABLES.add_group("pedals", prev_interactable)
+
         # adds left page button
         x = self.rel_pos(.5)
         y = self.rel_pos(rely=1)
@@ -199,12 +205,14 @@ class BasePedal:
         self.canvas.create_text((x - 50, y - 45), text="←", font=("Comic Sans MS", 20, "italic"), tags=self.tags + (button,))
         self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfig(t, text=rev_text_map[self.canvas.itemcget(t, "text")]) for t in button_to_text.values()])
         self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfigure(b, state="normal" if self.canvas.itemcget(button_to_text[b], "text").strip() else "hidden") for b in button_to_text.keys()], add="+")
+        left_interactable = Interactable(button, up=prev_interactable)
 
         # adds right page button
         button = self.canvas.create_rounded_rectangle((x + 25, y - 70, x + 75, y - 20), 10, fill="light blue", tags=self.tags)
         self.canvas.create_text((x + 50, y - 45), text="→", font=("Comic Sans MS", 20, "italic"), tags=self.tags + (button,))
         self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfig(t, text=text_map[self.canvas.itemcget(t, "text")]) for t in button_to_text.values()])
         self.canvas.add_button_binding(button, lambda: [self.canvas.itemconfigure(b, state="normal" if self.canvas.itemcget(button_to_text[b], "text").strip() else "hidden") for b in button_to_text.keys()], add="+")
+        Interactable(button, up=prev_interactable, left=left_interactable)
 
         return width
 

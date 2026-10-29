@@ -1,8 +1,8 @@
-from Controller import INTERACTABLES
+from customtkinter import CTk
 from UI.PedalboardUI import PedalboardUI
 
 
-root = INTERACTABLES.root
+root = CTk()
 root.geometry("1024x600")
 root.attributes("-fullscreen", True)
 root.configure(cursor="none")

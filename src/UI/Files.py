@@ -28,7 +28,7 @@ class Files(CTkFrame):
         CTkLabel(self, text="Saved Pedalboards", font=("Comic Sans MS", 30, "bold")).grid(row=0, column=0, columnspan=2)
         x_button = CTkButton(self, text="X", font=("Comic Sans MS", 25, "bold"), border_width=3, border_color="black", width=50, height=50, command=self.place_forget)
         x_button.grid(row=0, column=0, sticky="ne", padx=20, pady=20)
-        self.x_interactable = Interactable(x_button)
+        self.x_interactable = Interactable(x_button, focus_after="main")
         INTERACTABLES.add_group("files", self.x_interactable)
         self.body = CTkScrollableFrame(self)
         self.body.columnconfigure(0, weight=1)

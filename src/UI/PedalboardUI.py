@@ -1,7 +1,6 @@
 from tkinter import EventType, Event
 from uuid import uuid4
 from datetime import datetime
-from sys import argv
 from threading import Thread
 from customtkinter import CTkCanvas
 from pedalboard.io import AudioStream, AudioFile
@@ -9,6 +8,7 @@ from pedalboard import Pedalboard
 from UI.Settings import Settings
 from UI.Files import Files
 from UI.Pedals import *
+from Controller import *
 
 
 class PedalboardUI(CTkCanvas):
@@ -80,6 +80,15 @@ class PedalboardUI(CTkCanvas):
         self.create_rounded_rectangle((-175, -25, -125, 25), 5, fill="#1F6AA5", width=3, tags=self._record_tag)
         self._record_icon = self.create_text(-150, 0, text="◉", font=("Comic Sans MS", 25, "bold"), tags=self._record_tag)
         self.add_button_binding(self._record_tag, self._record_animation)
+
+        # adds controller
+        Interactable.CANVAS = self
+        type(INTERACTABLES).CANVAS = self
+        record_interactable = Interactable(self._record_tag, down="pedals")
+        files_interactable = Interactable(self._files_tag, left=record_interactable, down="pedals", focus_after="files")
+        Interactable(self._settings_tag, left=files_interactable, down="pedals", focus_after="settings")
+        INTERACTABLES.add_group("main", record_interactable)
+        INTERACTABLES.set_active_group("main")
 
     def _audio_job(self):
         """

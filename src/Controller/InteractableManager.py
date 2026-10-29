@@ -1,6 +1,6 @@
 from flask import Flask, request
 from threading import Thread
-from customtkinter import CTk
+from math import hypot
 
 
 class InteractionManager:
@@ -10,7 +10,7 @@ class InteractionManager:
 
     _singleton = None
     _server = Flask("4RunnerEffects")
-    root = CTk()
+    CANVAS = None
 
     @staticmethod
     @_server.route("/", methods=["POST"])
@@ -21,9 +21,9 @@ class InteractionManager:
 
         data = request.get_json()
         if data["input"] == "select":
-            InteractionManager.root.after(0, InteractionManager._singleton._focus.select)
+            InteractionManager.CANVAS.after(0, InteractionManager._singleton._focus.select)
         else:
-            InteractionManager.root.after(0, lambda: InteractionManager._singleton.change_focus(data["input"]))
+            InteractionManager.CANVAS.after(0, lambda: InteractionManager._singleton.change_focus(data["input"]))
 
         return "OK"
 
@@ -71,7 +71,41 @@ class InteractionManager:
         :param direction: the direction to shift focus to
         """
 
+        # gets the next element to focus
         if self._focus is not None and (elem := getattr(self._focus, direction)):
             self._focus.unfocus()
+            elem = self._dynamic_focus(elem) if type(elem) == str else elem
+
+            # skips element if it is hidden
+            while type(elem.reference) == str and InteractionManager.CANVAS.itemcget(elem.reference, "state") == "hidden":
+                elem = getattr(elem, direction)
             self._focus = elem
             self._focus.focus()
+
+    def _dynamic_focus(self, group):
+        """
+        dynamically calculates the next focused element in a group given a direction
+
+        :param group: the group of elements that is attempted to be focused
+
+        :return: the next interactable element to focus
+        """
+
+        # gets position of currently focused element
+        x1, y1, x2, y2 = InteractionManager.CANVAS.bbox(self._focus.reference)
+        focus_x, focus_y = (x1 + x2) // 2, (y1 + y2) // 2
+
+        # gets every node within the quad tree of interactable elements
+        nodes = {}
+        stack = [self._groups[group]]
+        while stack:
+            node = stack.pop()
+            if node is None or node in nodes or type(node) == str: continue
+
+            # calculates the distance to the currently focused element
+            x1, y1, x2, y2 = InteractionManager.CANVAS.bbox(node.reference)
+            x, y = (x1 + x2) // 2, (y1 + y2) // 2
+            nodes[node] = hypot(x - focus_x, y - focus_y)
+            stack.extend([node.up, node.down, node.left, node.right])
+
+        return min(nodes, key=nodes.get)

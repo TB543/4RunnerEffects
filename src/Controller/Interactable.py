@@ -8,6 +8,9 @@ class Interactable:
     keeps track of neighboring elements as well as functionality for it
     """
 
+    # will be set by canvas instance for calling canvas functions
+    CANVAS = None
+
     def __init__(self, reference, up=None, down=None, left=None, right=None, focus_after=None):
         """
         creates the interactable element
@@ -42,8 +45,17 @@ class Interactable:
         focuses this interactable element
         """
 
+        # changes border to red for tkinter widgets
         if type(self.reference) != str:
             self.reference.configure(border_color="red")
+
+        # changes border to red for custom drawn canvas elements
+        else:
+            for tag in Interactable.CANVAS.find_withtag(self.reference):
+                if Interactable.CANVAS.type(tag) == "arc":
+                    Interactable.CANVAS.itemconfigure(tag, outline="red")
+                if Interactable.CANVAS.type(tag) == "line":
+                    Interactable.CANVAS.itemconfigure(tag, fill="red")
 
     def unfocus(self):
         """
@@ -56,14 +68,33 @@ class Interactable:
             except:
                 pass
 
+        # changes border to black for custom drawn canvas elements
+        else:
+            for tag in Interactable.CANVAS.find_withtag(self.reference):
+                if Interactable.CANVAS.type(tag) == "arc":
+                    Interactable.CANVAS.itemconfigure(tag, outline="black")
+                if Interactable.CANVAS.type(tag) == "line":
+                    Interactable.CANVAS.itemconfigure(tag, fill="black")
+
     def select(self):
         """
         selects the interactable element
         """
 
+        # select functionality for tkinter widgets
         if type(self.reference) == CTkButton:
             self.reference.invoke()
         elif type(self.reference) == CTkEntry:
             self.reference.focus()
+
+        # select functionality for custom drawn canvas elements
+        else:
+            x1, y1, x2, y2 = Interactable.CANVAS.bbox(self.reference)
+            x = (x1 + x2) // 2
+            y = (y1 + y2) // 2
+            Interactable.CANVAS.event_generate("<Button-1>", x=x, y=y)
+            Interactable.CANVAS.after(200, lambda: Interactable.CANVAS.event_generate("<ButtonRelease-1>", x=x, y=y))
+
+        # changes focus if a new menu is opened
         if self.focus_after:
             _InteractionManager._singleton.set_active_group(self.focus_after)
