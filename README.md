@@ -66,9 +66,9 @@ cd 4RunnerEffects
 ```
 Install dependencies:
 ```
-pip install -r requirements.txt
+pip install -r resources/requirements.txt
 ```
-saved pedalboards are located at AppData/pedalboards.json. Additionally default audio in/out and pedalboard name on load can be passed as system arguments in that order
+saved pedalboards are located at AppData/pedalboards.json. Additionally saved recordings are saved in the AppData folder as well.
 
 ---
 
